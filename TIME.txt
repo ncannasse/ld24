@@ -5,3 +5,6 @@ Day 1
 11:00-13:30 : basic gfx + move hero + take chest
 
 13:30-19:30 : sword, save, zoom/color,
+
+19:30-01:00 : title screen, banners, sand, more gfx
+
