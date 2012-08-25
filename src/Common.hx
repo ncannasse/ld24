@@ -4,6 +4,8 @@ typedef BMP = flash.display.BitmapData;
 
 typedef TF = flash.text.TextField;
 
+typedef K = flash.ui.Keyboard;
+
 class Const implements haxe.Public {
 
 	static inline var SIZE = 16;

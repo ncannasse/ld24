@@ -10,12 +10,13 @@ enum EKind {
 	Monster;
 	Sword;
 	SavePoint;
+	Cursor;
 }
 
 class Entity
 {
 	
-	static var sprites = Tiles.initTiles(new SpritesPNG(0, 0), 16);
+	public static var sprites = Tiles.initTiles(new SpritesPNG(0, 0), 16);
 
 	public var kind : EKind;
 	public var x : Float;

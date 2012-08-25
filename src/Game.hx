@@ -1,7 +1,5 @@
 using Common;
 
-typedef K = flash.ui.Keyboard;
-
 class Game implements haxe.Public {
 	
 	var root : SPR;
@@ -73,15 +71,19 @@ class Game implements haxe.Public {
 	function new(root) {
 		this.root = root;
 		saveObj = flash.net.SharedObject.getLocal("ld24save");
-	}
-	
-	function init() {
-				
 		try {
 			savedData = saveObj.data.save;
 			props = haxe.Unserializer.run(savedData);
 		} catch( e : Dynamic ) {
+			savedData = null;
 		}
+	}
+	
+	public function hasSave() {
+		return savedData != null;
+	}
+	
+	function init() {
 		
 		entities = [];
 		view = new SPR();
@@ -111,10 +113,9 @@ class Game implements haxe.Public {
 		hero = new Hero(props.pos.x, props.pos.y);
 		
 		update();
-		root.addEventListener(flash.events.Event.ENTER_FRAME, function(_) update());
 		
 		if( props.chests.length == 0 )
-			getChest(CRightCtrl,0,0);
+			getChest(CRightCtrl, 0, 0);
 	}
 	
 	function save() {
@@ -247,6 +248,9 @@ class Game implements haxe.Public {
 	
 	function update() {
 		Timer.update();
+		
+		if( hero == null )
+			return;
 		
 		switch( props.scroll ) {
 		case 0:
@@ -429,8 +433,9 @@ class Game implements haxe.Public {
 		
 		var size = (Math.ceil(Const.SIZE * scroll.curZ) >> 1) + barsDelta;
 		if( props.bars || size < output.height * 0.5  ) {
-			output.fillRect(new flash.geom.Rectangle(0, 0, output.width, (output.height >> 1) - size), 0xFF143214);
-			output.fillRect(new flash.geom.Rectangle(0, (output.height >> 1) + size, output.width, output.height - (output.height >> 1) + size ), 0xFF143214);
+			var color = curColor.rgb == 0 ? 0xFF000000 : 0xFF143214;
+			output.fillRect(new flash.geom.Rectangle(0, 0, output.width, (output.height >> 1) - size), color);
+			output.fillRect(new flash.geom.Rectangle(0, (output.height >> 1) + size, output.width, output.height - (output.height >> 1) + size ), color);
 			if( !props.bars )
 				barsDelta += 5 * dt;
 		}
@@ -459,8 +464,9 @@ class Game implements haxe.Public {
 	public static var inst : Game;
 	static function main() {
 		inst = new Game(flash.Lib.current);
-		inst.init();
+		inst.root.addEventListener(flash.events.Event.ENTER_FRAME, function(_) inst.update());
 		Key.init();
+		var title = new Title(inst);
 	}
 	
 }
