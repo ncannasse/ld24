@@ -14,6 +14,7 @@ enum Block {
 	BridgeUD;
 	BridgeLR;
 	Bush;
+	RiverBank;
 }
 
 class World {
@@ -67,10 +68,24 @@ class World {
 		if( x < 0 || y < 0 || x >= SIZE || y >= SIZE )
 			return true;
 		return switch( t[x][y] ) {
-		case Dark, Tree, Water, Bush: true;
+		case Dark, Tree, Water, Bush, RiverBank: true;
 		case BridgeUD, BridgeLR: false;
 		case Field : false;
 		}
+	}
+	
+	function getSoil(x, y) {
+		if( x < 0 || y < 0 || x >= SIZE || y >= SIZE )
+			return Field;
+		var b = t[x][y];
+		return switch( b ) {
+		case Dark, Tree, Bush:
+			Field;
+		case BridgeLR, BridgeUD:
+			Water;
+		case Water, Field, RiverBank:
+			b;
+		};
 	}
 	
 	public function draw() {
@@ -79,16 +94,20 @@ class World {
 		details = false;
 		for( x in 0...SIZE )
 			for( y in 0...SIZE ) {
-				var b = t[x][y];
+				var b = getSoil(x,y);
+				putBlock(x, y, b);
 				switch( b ) {
-				case Dark:
-					putBlock(x,y,Field);
-				case Tree, Bush:
-					putBlock(x, y, Field);
-				case BridgeLR, BridgeUD:
-					putBlock(x, y, Water);
+				case Water:
+					switch( t[x][y - 1] ) {
+					case Water, BridgeLR:
+					default:
+						putSingle(x, y, RiverBank, 0);
+					}
+					if( getSoil(x+1,y) != Water )
+						putSingle(x, y, RiverBank, 1);
+					if( getSoil(x-1,y) != Water )
+						putSingle(x, y, RiverBank, 2);
 				default:
-					putBlock(x,y,b);
 				}
 			}
 		details = true;
@@ -107,6 +126,12 @@ class World {
 				}
 			}
 	}
+	
+	function putSingle(x, y, b:Block, k : Int ) {
+		var tl = tiles[Type.enumIndex(b) - 1];
+		if( tl == null || tl.length == 0 ) throw "Not tile for " + b;
+		put(x * Const.SIZE, y * Const.SIZE, tl[k%tl.length]);
+	}
 
 	function putBlock(x, y, b:Block, dx = 0, dy = 0, shade = false, mrnd = false ) {
 		var tx = x * Const.SIZE + dx;
@@ -118,7 +143,7 @@ class World {
 		}
 		var tl = tiles[Type.enumIndex(b) - 1];
 		var t = tl[min(rnd.random(tl.length), mrnd?rnd.random(tl.length):99)];
-		if( t == null ) throw "Not tile for " + b;
+		if( t == null || tl.length == 0 ) throw "Not tile for " + b;
 		if( !details || !removed[x][y] )
 			put(tx, ty, t);
 	}
