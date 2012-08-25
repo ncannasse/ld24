@@ -19,11 +19,11 @@ class Game implements haxe.Public {
 	
 	public static var props = {
 		debug : true,
-		zoom : 4,
+		zoom : 2, // 4,
 		bars : false, // true,
 		left : true, // false,
 		scroll : 2, // 0,
-		color : 2, // 0,
+		color : 4, // 0,
 		life : 0,
 		monsters : 0,
 	};

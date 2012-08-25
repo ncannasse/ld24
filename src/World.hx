@@ -15,6 +15,7 @@ enum Block {
 	BridgeLR;
 	Bush;
 	RiverBank;
+	Detail;
 }
 
 class World {
@@ -70,7 +71,7 @@ class World {
 		return switch( t[x][y] ) {
 		case Dark, Tree, Water, Bush, RiverBank: true;
 		case BridgeUD, BridgeLR: false;
-		case Field : false;
+		case Field, Detail: false;
 		}
 	}
 	
@@ -83,7 +84,7 @@ class World {
 			Field;
 		case BridgeLR, BridgeUD:
 			Water;
-		case Water, Field, RiverBank:
+		case Water, Field, RiverBank, Detail:
 			b;
 		};
 	}
@@ -115,6 +116,9 @@ class World {
 			for( y in 0...SIZE ) {
 				var b = t[x][y];
 				switch( b ) {
+				case Field:
+					if( rnd.random(3) == 0 )
+						putBlock(x, y, Detail, rnd.random(7) - 3, -rnd.random(4));
 				case Tree, Bush:
 					putBlock(x, y, b, rnd.random(5) - 2, -rnd.random(3), true, true);
 				case Dark:
