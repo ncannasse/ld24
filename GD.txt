@@ -7,7 +7,7 @@ List :
 
 TUTO
 
-	- start screen (because it needs to start somewhere)
+	x start screen (because it needs to start somewhere)
 
 	x left direction keys (because you need to go somewhere)
 
@@ -24,6 +24,8 @@ BASIC GAMEPLAY
 
 	x sword
 
+	x save point
+
 	- bow (distant action)
 
 	- axe (cut tree)
@@ -36,15 +38,15 @@ BASIC GAMEPLAY
 
 	- heal point
 
-	- save point
 
 WORLD
 
+	x keys
+
+	x locked doors
+
+
 	- secret passages
-
-	- keys
-
-	- locked doors
 
 	- dungeons
 
@@ -60,8 +62,7 @@ ADVANCED GAMEPLAY
 		doors opened
 		bushes cut
 
-	- quests (npc)
-
+	x quests (npc)
 
 	- experience
 
