@@ -1,0 +1,4 @@
+4:00-5:00 : thinking about gameplay
+
+11:00-13:30 : basic gfx + move hero + take chest
+
