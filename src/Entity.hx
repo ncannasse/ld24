@@ -8,6 +8,8 @@ enum EKind {
 	Hero;
 	Chest;
 	Monster;
+	Sword;
+	SavePoint;
 }
 
 class Entity
@@ -27,8 +29,9 @@ class Entity
 	public var mc : SPR;
 	var shade : SPR;
 	
+	public var animSpeed : Float;
 	var bmp : flash.display.Bitmap;
-	var frame : Int;
+	var frame : Float;
 	var game : Game;
 	
 	public function new( kind, x, y ) {
@@ -37,14 +40,15 @@ class Entity
 		this.y = this.iy = y;
 		
 		speed = 0.1;
-		frame = -1;
+		frame = Std.random(1000);
+		animSpeed = 0.3;
 		
 		mc = new SPR();
 		bmp = new flash.display.Bitmap();
 		game = Game.inst;
 		
 		switch( kind ) {
-		case Chest:
+		case Chest, SavePoint:
 		default:
 			shade = new SPR();
 			shade.graphics.beginFill(0, 0.1);
@@ -61,14 +65,7 @@ class Entity
 	}
 	
 	public function explode() {
-		var bmp = bmp.bitmapData;
-		for( x in 0...bmp.width )
-			for( y in 0...bmp.height ) {
-				var c = bmp.getPixel32(x, y);
-				if( c == 0 ) continue;
-				var b = new flash.display.Bitmap(Part.getColorPixel(c));
-				new Part(mc.x + x, mc.y + y, 0, b);
-			}
+		Part.explode(bmp.bitmapData, Std.int(mc.x), Std.int(mc.y));
 	}
 	
 	function updatePos(dt:Float) {
@@ -115,10 +112,15 @@ class Entity
 			shade.x = mc.x;
 			shade.y = mc.y;
 		}
-		
-		var sl = sprites[Type.enumIndex(kind)];
-		if( frame < 0 ) frame = Std.random(sl.length) else frame++;
-		bmp.bitmapData = sl[frame % sl.length];
+				
+		if( frame >= 0 ) {
+			var sl = sprites[Type.enumIndex(kind)];
+			frame += animSpeed * Timer.tmod;
+			var iframe = Std.int(frame) % sl.length;
+			bmp.bitmapData = sl[iframe];
+			if( sl.length == 0 )
+				frame = -1;
+		}
 	}
 	
 }

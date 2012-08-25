@@ -32,4 +32,9 @@ class Monster extends Entity {
 		super.update(dt);
 	}
 	
+	public function kill() {
+		explode();
+		remove();
+	}
+	
 }

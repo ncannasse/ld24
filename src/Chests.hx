@@ -5,6 +5,9 @@ enum ChestKind {
 	CScroll;
 	CColor;
 	CMonsters;
+	CWeapon;
+	CZoom;
+	CAllowSave;
 	// misc
 	CTitleScreen;
 	CRightCtrl;
@@ -26,6 +29,13 @@ class Chests  {
 		[
 			{ name : "Monsters !", sub : "Be careful not to touch them !" },
 		],
+		[
+			{ name : "Sword", sub : "Now you can kill the evil monsters" },
+		],
+		[
+			{ name : "VGA Resolution", sub : "Now that looks like some old PC game !" },
+		],
+		{ name : "Save Points", sub : "An evolutation that changed gaming forever..." },
 		// misc
 		{ name : "Title Screen", sub : "There's always a starting point somewhere" },
 		{ name : "Right Key", sub : "There seems to be some chest to open this way" },

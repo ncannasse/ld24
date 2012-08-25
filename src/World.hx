@@ -16,6 +16,8 @@ enum Block {
 	Bush;
 	RiverBank;
 	Detail;
+	Rock;
+	SavePoint;
 }
 
 class World {
@@ -23,13 +25,13 @@ class World {
 	public static inline var SIZE = 98;
 	
 	public var t : Array<Array<Block>>;
-	public var start : { x : Int, y : Int };
-	public var monsters : Array<{ x : Int, y : Int, e : Entity }>;
+	public var monsters : Array<{ x : Int, y : Int, e : Monster }>;
 	public var chests : Array<{ id : Chests.ChestKind, x : Int, y : Int, e : Entity }>;
 	
 	public var bmp : BMP;
 	public var tiles : Array<Array<BMP>>;
-	public var removed : Array<Array<Bool>>;
+	var removed : Array<Array<Bool>>;
+	var removedBitmaps : Array<Array<BMP>>;
 	
 	var rnd : Rand;
 	var shadeM : flash.geom.Matrix;
@@ -43,9 +45,11 @@ class World {
 		monsters = [];
 		chests = [];
 		removed = [];
+		removedBitmaps = [];
 		var bmp = new WorldPNG(0,0);
 		for( x in 0...SIZE ) {
 			t[x] = [];
+			removedBitmaps[x] = [];
 			removed[x] = [];
 			for( y in 0...SIZE )
 				t[x][y] = decodeColor(bmp, x, y);
@@ -68,10 +72,12 @@ class World {
 	public function collide(x, y) {
 		if( x < 0 || y < 0 || x >= SIZE || y >= SIZE )
 			return true;
+		if( removed[x][y] )
+			return false;
 		return switch( t[x][y] ) {
-		case Dark, Tree, Water, Bush, RiverBank: true;
+		case Dark, Tree, Water, Bush, RiverBank, Rock: true;
 		case BridgeUD, BridgeLR: false;
-		case Field, Detail: false;
+		case Field, Detail, SavePoint: false;
 		}
 	}
 	
@@ -80,13 +86,32 @@ class World {
 			return Field;
 		var b = t[x][y];
 		return switch( b ) {
-		case Dark, Tree, Bush:
+		case Dark, Tree, Bush, Rock, SavePoint:
 			Field;
 		case BridgeLR, BridgeUD:
 			Water;
 		case Water, Field, RiverBank, Detail:
 			b;
 		};
+	}
+	
+	public function remove(x, y) {
+		if( removed[x][y] )
+			return;
+		removed[x][y] = true;
+		draw();
+		var b = removedBitmaps[x][y];
+		if( b != null )
+			Part.explode(b, x * Const.SIZE, y * Const.SIZE);
+	}
+	
+	public function getPos(b) {
+		var pos = [];
+		for( x in 0...SIZE )
+			for( y in 0...SIZE )
+				if( t[x][y] == b )
+					pos.push( { x:x, y:y } );
+		return pos;
 	}
 	
 	public function draw() {
@@ -119,12 +144,12 @@ class World {
 				case Field:
 					if( rnd.random(3) == 0 )
 						putBlock(x, y, Detail, rnd.random(7) - 3, -rnd.random(4));
-				case Tree, Bush:
+				case Tree, Bush, Rock:
 					putBlock(x, y, b, rnd.random(5) - 2, -rnd.random(3), true, true);
 				case Dark:
 					if( rnd.random(3) == 0 )
 						putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), true, true);
-				case BridgeLR, BridgeUD:
+				case BridgeLR, BridgeUD, SavePoint:
 					putBlock(x, y, b);
 				default:
 				}
@@ -140,7 +165,8 @@ class World {
 	function putBlock(x, y, b:Block, dx = 0, dy = 0, shade = false, mrnd = false ) {
 		var tx = x * Const.SIZE + dx;
 		var ty = y * Const.SIZE + dy;
-		if( shade ) {
+		var rem = details && removed[x][y];
+		if( shade && !rem ) {
 			shadeM.tx = tx;
 			shadeM.ty = ty;
 			bmp.draw(shadeSPR, shadeM);
@@ -148,7 +174,9 @@ class World {
 		var tl = tiles[Type.enumIndex(b) - 1];
 		var t = tl[min(rnd.random(tl.length), mrnd?rnd.random(tl.length):99)];
 		if( t == null || tl.length == 0 ) throw "Not tile for " + b;
-		if( !details || !removed[x][y] )
+		if( details && rem )
+			removedBitmaps[x][y] = t;
+		else
 			put(tx, ty, t);
 	}
 	
@@ -171,9 +199,6 @@ class World {
 			return Tree;
 		case 0x64FD4D:
 			return Field;
-		case 0xFFFFFF:
-			start = { x : x, y : y };
-			return Field;
 		case 0x65B4FB:
 			return Water;
 		case 0x792D01:
@@ -185,6 +210,10 @@ class World {
 		case 0xDA0205:
 			monsters.push( { x:x, y:y, e:null } );
 			return Field;
+		case 0x9E9E9E:
+			return Rock;
+		case 0x023ADA:
+			return SavePoint;
 		default:
 			if( col & 0xFFFF00 == 0xFFFF00 ) {
 				chests.push( { x:x, y:y, e : null, id : Type.createEnumIndex(Chests.ChestKind,col & 0xFF) } );

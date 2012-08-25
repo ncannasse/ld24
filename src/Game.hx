@@ -13,26 +13,74 @@ class Game implements haxe.Public {
 	var pixelFilter : BMP;
 	var dm : DepthManager;
 	
+	var entities : Array<Entity>;
 	var barsDelta : Float;
 	var curColor : { mask : Float, delta : Float, alpha : Float, rgb : Float, k : Float };
 	var shake : { time : Float, power : Float };
+	var hasMonsters : Bool;
+	var hasSavePoints : Bool;
 	
-	public static var props = {
-		debug : true,
-		zoom : 2, // 4,
-		bars : false, // true,
-		left : true, // false,
-		scroll : 2, // 0,
-		color : 4, // 0,
-		life : 0,
-		monsters : 0,
-	};
+	var saveObj : flash.net.SharedObject;
+	var savedData : String;
+	
+	public static var props = PROPS[1];
+	
+	static var PROPS = [
+		{
+			debug : false,
+			zoom : 4,
+			bars : true,
+			left : false,
+			scroll : 0,
+			color : 0,
+			life : 0,
+			monsters : 0,
+			weapons : 0,
+			pos : { x : 21, y : 76 },
+			canSave : false,
+		},
+		{
+			debug : true,
+			zoom : 3,
+			bars : false,
+			left : true,
+			scroll : 2,
+			color : 2,
+			life : 0,
+			monsters : 1,
+			weapons : 1,
+			pos : { x : 42, y : 73 },
+			canSave : true,
+		},
+		{
+			debug : true,
+			zoom : 2,
+			bars : false,
+			left : true,
+			scroll : 2,
+			color : 4,
+			life : 0,
+			monsters : 1,
+			weapons : 1,
+			pos : { x : 21, y : 76 },
+			canSave : true,
+		}
+	];
 	
 	function new(root) {
 		this.root = root;
+		saveObj = flash.net.SharedObject.getLocal("ld24save");
 	}
 	
 	function init() {
+				
+		try {
+			savedData = saveObj.data.save;
+			props = haxe.Unserializer.run(savedData);
+		} catch( e : Dynamic ) {
+		}
+		
+		entities = [];
 		view = new SPR();
 		barsDelta = 0.;
 		output = new BMP(root.stage.stageWidth, root.stage.stageHeight);
@@ -42,7 +90,7 @@ class Game implements haxe.Public {
 		
 		world = new World();
 		world.draw();
-		scroll = { x : (world.start.x + 0.5) * Const.SIZE, y : (world.start.y + 0.5) * Const.SIZE, mc : new SPR(), curZ : props.zoom, tz : 1. };
+		scroll = { x : (props.pos.x + 0.5) * Const.SIZE, y : (props.pos.y + 0.5) * Const.SIZE, mc : new SPR(), curZ : props.zoom, tz : 1. };
 		scroll.mc.x = -1000;
 		scroll.mc.addChild(new flash.display.Bitmap(world.bmp));
 		dm = new DepthManager(scroll.mc);
@@ -53,12 +101,24 @@ class Game implements haxe.Public {
 			c.e.update(0);
 		}
 
-		hero = new Hero(world.start.x, world.start.y);
+		hero = new Hero(props.pos.x, props.pos.y);
 		
 		update();
 		root.addEventListener(flash.events.Event.ENTER_FRAME, function(_) update());
 		
 		getChest(CRightCtrl);
+	}
+	
+	function save() {
+		props.pos.x = hero.ix;
+		props.pos.y = hero.iy;
+		var d = haxe.Serializer.run(props);
+		if( savedData == d )
+			return;
+		savedData = d;
+		saveObj.setProperty("save",savedData);
+		saveObj.flush();
+		popup("Game <font color='#00ff00'>Saved</font>", "You are safe !");
 	}
 	
 	function js( s : String ) {
@@ -148,9 +208,15 @@ class Game implements haxe.Public {
 		case CMonsters:
 			index = props.monsters;
 			props.monsters++;
-			if( props.monsters == 1 )
-				for( m in world.monsters )
-					m.e = new Monster(m.x, m.y);
+		case CWeapon:
+			index = props.weapons;
+			props.weapons++;
+		case CZoom:
+			shake = null;
+			index = 4 - props.zoom;
+			props.zoom--;
+		case CAllowSave:
+			props.canSave = true;
 		}
 		var t : Dynamic = Chests.t[Type.enumIndex(k)];
 		if( t == null )
@@ -187,14 +253,23 @@ class Game implements haxe.Public {
 		
 		var dt = Timer.tmod;
 				
-		scroll.curZ = scroll.curZ * 0.8 + (scroll.tz * props.zoom) * 0.2;
+		var tz = scroll.tz * props.zoom;
+		var zooming = true;
+		scroll.curZ = scroll.curZ * 0.8 + tz * 0.2;
+		if( Math.abs(scroll.curZ - tz) < 0.1 ) {
+			zooming = false;
+			scroll.curZ = tz;
+		}
+		
 		var z = scroll.curZ;
 		var tx = scroll.x - (root.stage.stageWidth / z) * 0.5;
 		var ty = scroll.y - (root.stage.stageHeight / z) * 0.5;
 		var sx = Std.int(tx * z);
 		var sy = Std.int(ty * z);
-		sx -= sx % props.zoom;
-		sy -= sy % props.zoom;
+		if( !zooming ) {
+			sx -= sx % props.zoom;
+			sy -= sy % props.zoom;
+		}
 		scroll.mc.x = -sx;
 		scroll.mc.y = -sy;
 		scroll.mc.scaleX = scroll.mc.scaleY = z;
@@ -213,24 +288,19 @@ class Game implements haxe.Public {
 					getChest(c.id);
 				}
 			
-			if( (Key.isDown(K.UP) || Key.isDown("Z".code) || Key.isDown("W".code)) && !props.bars && !world.collide(hero.ix, hero.iy - 1) ) {
-				hero.iy--;
-				hero.target = { x : hero.ix, y : hero.iy };
-			}
-			if( (Key.isDown(K.DOWN) || Key.isDown("S".code)) && !props.bars && !world.collide(hero.ix, hero.iy+1) ) {
-				hero.iy++;
-				hero.target = { x : hero.ix, y : hero.iy };
-			}
-			if( (Key.isDown(K.LEFT) || Key.isDown("Q".code) || Key.isDown("A".code)) && props.left && !world.collide(hero.ix - 1, hero.iy) ) {
-				hero.ix--;
-				hero.target = { x : hero.ix, y : hero.iy };
-			}
-			if( (Key.isDown(K.RIGHT) || Key.isDown("D".code)) && !world.collide(hero.ix + 1, hero.iy) ) {
-				hero.ix++;
-				hero.target = { x : hero.ix, y : hero.iy };
-			}
-			
-			
+			if( (Key.isDown(K.UP) || Key.isDown("Z".code) || Key.isDown("W".code)) && !props.bars )
+				hero.move(0, -1);
+			if( (Key.isDown(K.DOWN) || Key.isDown("S".code)) && !props.bars )
+				hero.move(0, 1);
+			if( (Key.isDown(K.LEFT) || Key.isDown("Q".code) || Key.isDown("A".code)) && props.left )
+				hero.move( -1, 0);
+			if( Key.isDown(K.RIGHT) || Key.isDown("D".code) )
+				hero.move(1, 0);
+		}
+		
+		if( hero.sword == null && !hero.lock ) {
+			if( (Key.isDown(K.SPACE) || Key.isDown(K.ENTER) || Key.isDown("E".code)) && props.weapons > 0 )
+				hero.attack();
 		}
 		
 		if( Key.isToggled(27) ) {
@@ -258,9 +328,11 @@ class Game implements haxe.Public {
 				}
 			}
 		}
-		
-		if( props.monsters > 0 )
-			for( m in world.monsters )
+				
+		if( props.monsters > 0 ) {
+			for( m in world.monsters ) {
+				if( !hasMonsters )
+					m.e = new Monster(m.x, m.y);
 				if( m.e != null ) {
 					m.e.update(dt);
 					var dx = m.e.x - hero.x;
@@ -272,6 +344,22 @@ class Game implements haxe.Public {
 							gameOver();
 					}
 				}
+			}
+			hasMonsters = true;
+		}
+		
+		if( props.canSave && !hasSavePoints ) {
+			hasSavePoints = true;
+			for( p in world.getPos(SavePoint) ) {
+				var e = new Entity(SavePoint, p.x, p.y);
+				e.mc.alpha = 0.3;
+				e.y += 3 / Const.SIZE;
+				entities.push(e);
+			}
+		}
+		
+		for( e in entities )
+			e.update(dt);
 
 		var old = curColor;
 		var pixelAlpha = 1.0;
