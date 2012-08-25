@@ -18,6 +18,10 @@ enum Block {
 	Detail;
 	Rock;
 	SavePoint;
+	Sand;
+	SandBank;
+	SandDetail;
+	Cactus;
 }
 
 class World {
@@ -35,7 +39,7 @@ class World {
 	
 	var rnd : Rand;
 	var shadeM : flash.geom.Matrix;
-	var shadeSPR : SPR;
+	var shadeSPR : Array<SPR>;
 	var pt : flash.geom.Point;
 	var p0 : flash.geom.Point;
 	var details : Bool;
@@ -60,9 +64,13 @@ class World {
 		p0 = new flash.geom.Point();
 		this.bmp = new BMP(SIZE * Const.SIZE, SIZE * Const.SIZE, true, 0);
 		shadeM = new flash.geom.Matrix();
-		shadeSPR = new SPR();
-		shadeSPR.graphics.beginFill(0xFF000000, 0.15);
-		shadeSPR.graphics.drawEllipse(1, 10, 14, 8);
+		var s0 = new SPR();
+		s0.graphics.beginFill(0xFF000000, 0.15);
+		s0.graphics.drawEllipse(1, 10, 14, 8);
+		var s1 = new SPR();
+		s1.graphics.beginFill(0xFF000000, 0.15);
+		s1.graphics.drawEllipse(2, 11, 6, 5);
+		shadeSPR = [s0, s1];
 	}
 	
 	function initTiles() {
@@ -75,23 +83,37 @@ class World {
 		if( removed[x][y] )
 			return false;
 		return switch( t[x][y] ) {
-		case Dark, Tree, Water, Bush, RiverBank, Rock: true;
+		case Dark, Tree, Water, Bush, Rock, Cactus: true;
 		case BridgeUD, BridgeLR: false;
-		case Field, Detail, SavePoint: false;
+		case Field, SavePoint, Sand: false;
+		case SandBank, RiverBank, Detail, SandDetail: false;
 		}
 	}
 	
-	function getSoil(x, y) {
+	function getSoil(x, y, rec=false) : Block {
 		if( x < 0 || y < 0 || x >= SIZE || y >= SIZE )
 			return Field;
 		var b = t[x][y];
 		return switch( b ) {
-		case Dark, Tree, Bush, Rock, SavePoint:
-			Field;
-		case BridgeLR, BridgeUD:
-			Water;
-		case Water, Field, RiverBank, Detail:
+		case Dark, Tree, Bush, Rock, SavePoint, Cactus:
+			if( rec ) return null;
+			var cur : Block = null;
+			var s = getSoil(x, y - 1, true);
+			if( cur == null || (s != null && Type.enumIndex(s) < Type.enumIndex(cur)) ) cur = s;
+			var s = getSoil(x, y + 1, true);
+			if( cur == null || (s != null && Type.enumIndex(s) < Type.enumIndex(cur)) ) cur = s;
+			var s = getSoil(x - 1, y, true);
+			if( cur == null || (s != null && Type.enumIndex(s) < Type.enumIndex(cur)) ) cur = s;
+			var s = getSoil(x + 1, y, true);
+			if( cur == null || (s != null && Type.enumIndex(s) < Type.enumIndex(cur)) ) cur = s;
+			if( cur == null ) cur = Field;
+			cur;
+		case BridgeLR, BridgeUD, Water:
+			if( rec ) null else Water;
+		case Field, Sand:
 			b;
+		case Detail, RiverBank, SandBank, SandDetail:
+			null;
 		};
 	}
 	
@@ -115,6 +137,7 @@ class World {
 	}
 	
 	public function draw() {
+		var t0 = flash.Lib.getTimer();
 		bmp.fillRect(bmp.rect, 0xFF000000);
 		rnd = new Rand(42);
 		details = false;
@@ -124,15 +147,27 @@ class World {
 				putBlock(x, y, b);
 				switch( b ) {
 				case Water:
-					switch( t[x][y - 1] ) {
-					case Water, BridgeLR:
+					switch( getSoil(x,y-1) ) {
+					case Water:
+					case Sand:
+						putSingle(x, y, SandBank, 0);
 					default:
 						putSingle(x, y, RiverBank, 0);
 					}
-					if( getSoil(x+1,y) != Water )
-						putSingle(x, y, RiverBank, 1);
-					if( getSoil(x-1,y) != Water )
-						putSingle(x, y, RiverBank, 2);
+					var s;
+					if( (s=getSoil(x+1,y)) != Water )
+						putSingle(x, y, s == Sand ? SandBank : RiverBank, 1);
+					if( (s=getSoil(x-1,y)) != Water )
+						putSingle(x, y, s == Sand ? SandBank : RiverBank, 2);
+				case Field:
+					if( getSoil(x,y-1) == Sand )
+						putSingle(x, y, SandBank, 0);
+					if( getSoil(x+1,y) == Sand )
+						putSingle(x, y, SandBank, 1);
+					if( getSoil(x-1,y) == Sand )
+						putSingle(x, y, SandBank, 2);
+					if( getSoil(x,y+1) == Sand )
+						putSingle(x, y, SandBank, 3);
 				default:
 				}
 			}
@@ -144,16 +179,24 @@ class World {
 				case Field:
 					if( rnd.random(3) == 0 )
 						putBlock(x, y, Detail, rnd.random(7) - 3, -rnd.random(4));
-				case Tree, Bush, Rock:
-					putBlock(x, y, b, rnd.random(5) - 2, -rnd.random(3), true, true);
+				case Sand:
+					if( rnd.random(3) == 0 )
+						putBlock(x, y, SandDetail, rnd.random(7) - 3, -rnd.random(4));
+				case Tree:
+					putBlock(x, y, b, rnd.random(5) - 2, -rnd.random(3), 0, true);
+				case Rock, Bush:
+					putBlock(x, y, b, rnd.random(5) - 2, -rnd.random(3), 0);
+				case Cactus:
+					putBlock(x, y, b, rnd.random(5) - 2, -rnd.random(3), 1);
 				case Dark:
 					if( rnd.random(3) == 0 )
-						putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), true, true);
+						putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), 0, true);
 				case BridgeLR, BridgeUD, SavePoint:
 					putBlock(x, y, b);
 				default:
 				}
 			}
+		//trace(flash.Lib.getTimer() - t0);
 	}
 	
 	function putSingle(x, y, b:Block, k : Int ) {
@@ -162,14 +205,14 @@ class World {
 		put(x * Const.SIZE, y * Const.SIZE, tl[k%tl.length]);
 	}
 
-	function putBlock(x, y, b:Block, dx = 0, dy = 0, shade = false, mrnd = false ) {
+	function putBlock(x, y, b:Block, dx = 0, dy = 0, shade = -1, mrnd = false ) {
 		var tx = x * Const.SIZE + dx;
 		var ty = y * Const.SIZE + dy;
 		var rem = details && removed[x][y];
-		if( shade && !rem ) {
+		if( shade >= 0 && !rem ) {
 			shadeM.tx = tx;
 			shadeM.ty = ty;
-			bmp.draw(shadeSPR, shadeM);
+			bmp.draw(shadeSPR[shade], shadeM);
 		}
 		var tl = tiles[Type.enumIndex(b) - 1];
 		var t = tl[min(rnd.random(tl.length), mrnd?rnd.random(tl.length):99)];
@@ -214,6 +257,10 @@ class World {
 			return Rock;
 		case 0x023ADA:
 			return SavePoint;
+		case 0xE8FD4D:
+			return Sand;
+		case 0x6FC418:
+			return Cactus;
 		default:
 			if( col & 0xFFFF00 == 0xFFFF00 ) {
 				chests.push( { x:x, y:y, e : null, id : Type.createEnumIndex(Chests.ChestKind,col & 0xFF) } );

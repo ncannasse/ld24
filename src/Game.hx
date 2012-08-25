@@ -23,11 +23,11 @@ class Game implements haxe.Public {
 	var saveObj : flash.net.SharedObject;
 	var savedData : String;
 	
-	public static var props = PROPS[1];
+	public static var props = PROPS[0];
 	
 	static var PROPS = [
 		{
-			debug : false,
+			debug : true,
 			zoom : 4,
 			bars : true,
 			left : false,
@@ -38,6 +38,7 @@ class Game implements haxe.Public {
 			weapons : 0,
 			pos : { x : 21, y : 76 },
 			canSave : false,
+			chests : [],
 		},
 		{
 			debug : true,
@@ -51,6 +52,7 @@ class Game implements haxe.Public {
 			weapons : 1,
 			pos : { x : 42, y : 73 },
 			canSave : true,
+			chests : [],
 		},
 		{
 			debug : true,
@@ -64,6 +66,7 @@ class Game implements haxe.Public {
 			weapons : 1,
 			pos : { x : 21, y : 76 },
 			canSave : true,
+			chests : [],
 		}
 	];
 	
@@ -96,17 +99,22 @@ class Game implements haxe.Public {
 		dm = new DepthManager(scroll.mc);
 		view.addChild(scroll.mc);
 		
-		for( c in world.chests ) {
-			c.e = new Entity(Chest,c.x,c.y);
-			c.e.update(0);
-		}
+		var hchests = new IntHash();
+		for( c in props.chests )
+			hchests.set(c, true);
+		for( c in world.chests )
+			if( !hchests.exists(c.x + c.y * World.SIZE) ) {
+				c.e = new Entity(Chest,c.x,c.y);
+				c.e.update(0);
+			}
 
 		hero = new Hero(props.pos.x, props.pos.y);
 		
 		update();
 		root.addEventListener(flash.events.Event.ENTER_FRAME, function(_) update());
 		
-		getChest(CRightCtrl);
+		if( props.chests.length == 0 )
+			getChest(CRightCtrl,0,0);
 	}
 	
 	function save() {
@@ -189,8 +197,9 @@ class Game implements haxe.Public {
 		shake = { time : 10, power : 3 };
 	}
 	
-	function getChest( k : Chests.ChestKind ) {
+	function getChest( k : Chests.ChestKind, x : Int, y : Int ) {
 		doShake();
+		props.chests.push(y * World.SIZE + x);
 		var index : Null<Int> = null;
 		switch( k ) {
 		case CTitleScreen, CRightCtrl:
@@ -285,16 +294,16 @@ class Game implements haxe.Public {
 				if( c.e != null && c.x == hero.ix && c.y == hero.iy ) {
 					c.e.remove();
 					c.e = null;
-					getChest(c.id);
+					getChest(c.id,c.x,c.y);
 				}
 			
 			if( (Key.isDown(K.UP) || Key.isDown("Z".code) || Key.isDown("W".code)) && !props.bars )
 				hero.move(0, -1);
-			if( (Key.isDown(K.DOWN) || Key.isDown("S".code)) && !props.bars )
+			if( hero.target == null && (Key.isDown(K.DOWN) || Key.isDown("S".code)) && !props.bars )
 				hero.move(0, 1);
-			if( (Key.isDown(K.LEFT) || Key.isDown("Q".code) || Key.isDown("A".code)) && props.left )
+			if( hero.target == null && (Key.isDown(K.LEFT) || Key.isDown("Q".code) || Key.isDown("A".code)) && props.left )
 				hero.move( -1, 0);
-			if( Key.isDown(K.RIGHT) || Key.isDown("D".code) )
+			if( hero.target == null && Key.isDown(K.RIGHT) || Key.isDown("D".code) )
 				hero.move(1, 0);
 		}
 		
