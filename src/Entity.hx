@@ -48,7 +48,12 @@ class Entity
 		game = Game.inst;
 		
 		switch( kind ) {
-		case Chest, SavePoint:
+		case Chest:
+			shade = new SPR();
+			shade.graphics.beginFill(0, 0.1);
+			shade.graphics.drawRect(2, 12, 11, 6);
+			game.dm.add(shade, Const.PLAN_SHADE);
+		case SavePoint:
 		default:
 			shade = new SPR();
 			shade.graphics.beginFill(0, 0.1);

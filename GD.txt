@@ -9,22 +9,20 @@ TUTO
 
 	- start screen (because it needs to start somewhere)
 
-	- left direction keys (because you need to go somewhere)
+	x left direction keys (because you need to go somewhere)
 
-	- right direction key (because left is boring)
+	x right direction key (because left is boring)
 
-	- 2D movement (because there's nowhere left to go)
+	x 2D movement (because there's nowhere left to go)
 
-	- scrolling
+	x scrolling
 
-	- action key (open doors)
-
-	- monsters
+	x monsters
 
 
 BASIC GAMEPLAY
-	
-	- sword
+
+	x sword
 
 	- bow (distant action)
 
@@ -39,7 +37,7 @@ BASIC GAMEPLAY
 	- heal point
 
 	- save point
-	
+
 WORLD
 
 	- secret passages
@@ -55,7 +53,7 @@ ADVANCED GAMEPLAY
 	- trap (because people ALWAYS fell for it)
 	big red button ?
 	spawn monster around
-	
+
 
 	- acheivements
 		monsters killed
@@ -84,23 +82,23 @@ WEB
 	- social sharing icons
 
 	- author infos (twitter, blog, etc.)
-	
+
 VISUAL/SOUND
 
-	- color modes : 16 colors, 8 bits (fixed), 16 bits, RGB
+	x color modes : 16 colors, 8 bits (fixed), 16 bits, RGB
 
-	- resolution : medium (quite fast to find, double quality), high (2x view zone)
+	x resolution : medium (quite fast to find, double quality), high (2x view zone)
 
 	- mode 7 ?
 
 	- sfx
-	
+
 	- music (buzer 8 bit and 16 bits ?)
-	
+
 	- font
 
 MISC
 
 	- toilets  : heroes need to pee
-	
+
 
