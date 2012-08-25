@@ -60,7 +60,7 @@ ADVANCED GAMEPLAY
 	- acheivements
 		monsters killed
 		doors opened
-		bushes cut	
+		bushes cut
 
 	- quests (npc)
 
@@ -96,7 +96,11 @@ VISUAL/SOUND
 	- sfx
 	
 	- music (buzer 8 bit and 16 bits ?)
+	
+	- font
 
 MISC
 
+	- toilets  : heroes need to pee
+	
 

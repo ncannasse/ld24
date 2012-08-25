@@ -10,6 +10,10 @@ enum Block {
 	Dark;
 	Field;
 	Tree;
+	Water;
+	BridgeUD;
+	BridgeLR;
+	Bush;
 }
 
 class World {
@@ -18,23 +22,29 @@ class World {
 	
 	public var t : Array<Array<Block>>;
 	public var start : { x : Int, y : Int };
-	public var chests : Array<{ id : Int, x : Int, y : Int, e : Entity }>;
+	public var monsters : Array<{ x : Int, y : Int, e : Entity }>;
+	public var chests : Array<{ id : Chests.ChestKind, x : Int, y : Int, e : Entity }>;
 	
 	public var bmp : BMP;
 	public var tiles : Array<Array<BMP>>;
+	public var removed : Array<Array<Bool>>;
 	
 	var rnd : Rand;
 	var shadeM : flash.geom.Matrix;
 	var shadeSPR : SPR;
 	var pt : flash.geom.Point;
 	var p0 : flash.geom.Point;
+	var details : Bool;
 	
 	public function new() {
 		t = [];
+		monsters = [];
 		chests = [];
+		removed = [];
 		var bmp = new WorldPNG(0,0);
 		for( x in 0...SIZE ) {
 			t[x] = [];
+			removed[x] = [];
 			for( y in 0...SIZE )
 				t[x][y] = decodeColor(bmp, x, y);
 		}
@@ -57,7 +67,8 @@ class World {
 		if( x < 0 || y < 0 || x >= SIZE || y >= SIZE )
 			return true;
 		return switch( t[x][y] ) {
-		case Dark, Tree: true;
+		case Dark, Tree, Water, Bush: true;
+		case BridgeUD, BridgeLR: false;
 		case Field : false;
 		}
 	}
@@ -65,27 +76,33 @@ class World {
 	public function draw() {
 		bmp.fillRect(bmp.rect, 0xFF000000);
 		rnd = new Rand(42);
+		details = false;
 		for( x in 0...SIZE )
 			for( y in 0...SIZE ) {
 				var b = t[x][y];
 				switch( b ) {
 				case Dark:
 					putBlock(x,y,Field);
-				case Tree:
-					putBlock(x,y,Field);
+				case Tree, Bush:
+					putBlock(x, y, Field);
+				case BridgeLR, BridgeUD:
+					putBlock(x, y, Water);
 				default:
 					putBlock(x,y,b);
 				}
 			}
+		details = true;
 		for( x in 0...SIZE )
 			for( y in 0...SIZE ) {
 				var b = t[x][y];
 				switch( b ) {
-				case Tree:
-					putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), true, true);
+				case Tree, Bush:
+					putBlock(x, y, b, rnd.random(5) - 2, -rnd.random(3), true, true);
 				case Dark:
 					if( rnd.random(3) == 0 )
 						putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), true, true);
+				case BridgeLR, BridgeUD:
+					putBlock(x, y, b);
 				default:
 				}
 			}
@@ -100,7 +117,10 @@ class World {
 			bmp.draw(shadeSPR, shadeM);
 		}
 		var tl = tiles[Type.enumIndex(b) - 1];
-		put(tx, ty, tl[min(rnd.random(tl.length), mrnd?rnd.random(tl.length):99)]);
+		var t = tl[min(rnd.random(tl.length), mrnd?rnd.random(tl.length):99)];
+		if( t == null ) throw "Not tile for " + b;
+		if( !details || !removed[x][y] )
+			put(tx, ty, t);
 	}
 	
 	inline function min(x:Int, y:Int) {
@@ -125,9 +145,20 @@ class World {
 		case 0xFFFFFF:
 			start = { x : x, y : y };
 			return Field;
+		case 0x65B4FB:
+			return Water;
+		case 0x792D01:
+			return BridgeUD;
+		case 0xE65400:
+			return BridgeLR;
+		case 0x1EDA02:
+			return Bush;
+		case 0xDA0205:
+			monsters.push( { x:x, y:y, e:null } );
+			return Field;
 		default:
 			if( col & 0xFFFF00 == 0xFFFF00 ) {
-				chests.push( { x:x, y:y, e : null, id : col & 0xFF } );
+				chests.push( { x:x, y:y, e : null, id : Type.createEnumIndex(Chests.ChestKind,col & 0xFF) } );
 				return Field;
 			}
 			throw "Unknown color 0x" + StringTools.hex(col, 6)+" at ("+x+","+y+")";

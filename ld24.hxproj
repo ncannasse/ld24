@@ -6,8 +6,8 @@
     <movie input="" />
     <movie path="ld24.swf" />
     <movie fps="40" />
-    <movie width="800" />
-    <movie height="600" />
+    <movie width="600" />
+    <movie height="408" />
     <movie version="10" />
     <movie minorVersion="0" />
     <movie platform="Flash Player" />
@@ -37,7 +37,7 @@
   </compileTargets>
   <!-- Assets to embed into the output SWF -->
   <library>
-    <!-- example: <asset path="..." id="..." update="..." glyphs="..." mode="..." place="..." sharepoint="..." /> -->
+    <asset path="gfx\04B_03__.TTF" id="BmpFont" glyphs="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!," />
   </library>
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>
