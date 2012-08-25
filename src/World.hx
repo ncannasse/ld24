@@ -22,6 +22,10 @@ enum Block {
 	SandBank;
 	SandDetail;
 	Cactus;
+	Door;
+	// extra
+	Lock;
+	Free;
 }
 
 class World {
@@ -31,10 +35,11 @@ class World {
 	public var t : Array<Array<Block>>;
 	public var monsters : Array<{ x : Int, y : Int, e : Monster }>;
 	public var chests : Array<{ id : Chests.ChestKind, x : Int, y : Int, e : Entity }>;
+	public var npcs : Array < { x:Int, y:Int, e:Entity }>;
 	
 	public var bmp : BMP;
 	public var tiles : Array<Array<BMP>>;
-	var removed : Array<Array<Bool>>;
+	public var removed : Array<Array<Bool>>;
 	var removedBitmaps : Array<Array<BMP>>;
 	
 	var rnd : Rand;
@@ -49,6 +54,7 @@ class World {
 		monsters = [];
 		chests = [];
 		removed = [];
+		npcs = [];
 		removedBitmaps = [];
 		var bmp = new WorldPNG(0,0);
 		for( x in 0...SIZE ) {
@@ -83,9 +89,9 @@ class World {
 		if( removed[x][y] )
 			return false;
 		return switch( t[x][y] ) {
-		case Dark, Tree, Water, Bush, Rock, Cactus: true;
+		case Dark, Tree, Water, Bush, Rock, Cactus, Lock, Door: true;
 		case BridgeUD, BridgeLR: false;
-		case Field, SavePoint, Sand: false;
+		case Field, SavePoint, Sand, Free: false;
 		case SandBank, RiverBank, Detail, SandDetail: false;
 		}
 	}
@@ -95,7 +101,7 @@ class World {
 			return Field;
 		var b = t[x][y];
 		return switch( b ) {
-		case Dark, Tree, Bush, Rock, SavePoint, Cactus:
+		case Dark, Tree, Bush, Rock, SavePoint, Cactus, Lock, Free, Door:
 			if( rec ) return null;
 			var cur : Block = null;
 			var s = getSoil(x, y - 1, true);
@@ -119,12 +125,14 @@ class World {
 	
 	public function remove(x, y) {
 		if( removed[x][y] )
-			return;
+			return false;
 		removed[x][y] = true;
+		Game.props.rem.push(x + y * SIZE);
 		draw();
 		var b = removedBitmaps[x][y];
 		if( b != null )
 			Part.explode(b, x * Const.SIZE, y * Const.SIZE);
+		return true;
 	}
 	
 	public function getPos(b) {
@@ -191,7 +199,7 @@ class World {
 				case Dark:
 					if( rnd.random(3) == 0 )
 						putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), 0, true);
-				case BridgeLR, BridgeUD, SavePoint:
+				case BridgeLR, BridgeUD, SavePoint, Door:
 					putBlock(x, y, b);
 				default:
 				}
@@ -252,7 +260,7 @@ class World {
 			return Bush;
 		case 0xDA0205:
 			monsters.push( { x:x, y:y, e:null } );
-			return Field;
+			return decodeColor(bmp,x,y-1);
 		case 0x9E9E9E:
 			return Rock;
 		case 0x023ADA:
@@ -261,6 +269,11 @@ class World {
 			return Sand;
 		case 0x6FC418:
 			return Cactus;
+		case 0xFD4DD3:
+			npcs.push( { x:x, y:y, e:null } );
+			return Free;
+		case 0xC49918:
+			return Door;
 		default:
 			if( col & 0xFFFF00 == 0xFFFF00 ) {
 				chests.push( { x:x, y:y, e : null, id : Type.createEnumIndex(Chests.ChestKind,col & 0xFF) } );

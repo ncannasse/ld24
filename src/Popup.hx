@@ -38,6 +38,10 @@ class Popup extends SPR {
 		return true;
 	}
 	
+	public static function has() {
+		return all.length > 0;
+	}
+	
 	public static function updateAll( dt ) {
 		for( p in all.copy() )
 			if( !p.update(dt) ) {

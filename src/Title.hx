@@ -18,6 +18,7 @@ class Title {
 	var time : Float;
 	var layer2 : flash.display.Bitmap;
 	var layer3 : flash.display.Bitmap;
+	var started : Bool;
 	
 	public function new( game : Game ) {
 		time = 0;
@@ -96,15 +97,20 @@ class Title {
 		cursor.x = 105 + Math.sin(time) * 2;
 		cursor.y = 120 + (load ? 20 : 0);
 		for( k in ["E".code, K.ENTER, K.SPACE] )
-			if( Key.isToggled(k) || Game.props.debug ) {
-				start();
+			if( Key.isToggled(k) ) {
+				haxe.Timer.delay(start,10);
 				return;
 			}
+		if( Game.props.debug )
+			start();
 	}
 	
 	function start() {
+		if( started )
+			return;
+		started = true;
 		if( !load )
-			Game.props = Game.PROPS[0];
+			Game.props = Game.DEF_PROPS;
 		root.removeEventListener(flash.events.Event.ENTER_FRAME,update);
 		root.remove();
 		game.init();

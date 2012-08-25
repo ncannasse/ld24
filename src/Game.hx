@@ -15,61 +15,37 @@ class Game implements haxe.Public {
 	var barsDelta : Float;
 	var curColor : { mask : Float, delta : Float, alpha : Float, rgb : Float, k : Float };
 	var shake : { time : Float, power : Float };
-	var hasMonsters : Bool;
-	var hasSavePoints : Bool;
 	
 	var saveObj : flash.net.SharedObject;
 	var savedData : String;
 	
-	public static var props = PROPS[0];
+	static var has = {
+		monsters : false,
+		npc : false,
+		savePoints : false,
+	};
 	
-	static var PROPS = [
-		{
-			debug : true,
-			zoom : 4,
-			bars : true,
-			left : false,
-			scroll : 0,
-			color : 0,
-			life : 0,
-			monsters : 0,
-			weapons : 0,
-			web : 0,
-			pos : { x : 21, y : 76 },
-			canSave : false,
-			chests : [],
-		},
-		{
-			debug : true,
-			zoom : 3,
-			bars : false,
-			left : true,
-			scroll : 2,
-			color : 2,
-			life : 0,
-			web : 0,
-			monsters : 1,
-			weapons : 1,
-			pos : { x : 42, y : 73 },
-			canSave : true,
-			chests : [],
-		},
-		{
-			debug : true,
-			zoom : 2,
-			bars : false,
-			left : true,
-			scroll : 2,
-			color : 4,
-			life : 0,
-			web : 0,
-			monsters : 1,
-			weapons : 1,
-			pos : { x : 21, y : 76 },
-			canSave : true,
-			chests : [],
-		}
-	];
+	static var DEF_PROPS = {
+		debug : true,
+		zoom : 4,
+		bars : true,
+		left : false,
+		scroll : 0,
+		color : 0,
+		life : 0,
+		monsters : 0,
+		weapons : 0,
+		web : 0,
+		pos : { x : 21, y : 76 },
+		canSave : false,
+		chests : new Array<Int>(),
+		rem : new Array<Int>(),
+		npc : 0,
+		keys : 0,
+		gold : 0,
+		quests : new Array<Int>(),
+	};
+	public static var props = DEF_PROPS;
 	
 	function new(root) {
 		this.root = root;
@@ -77,6 +53,8 @@ class Game implements haxe.Public {
 		try {
 			savedData = saveObj.data.save;
 			props = haxe.Unserializer.run(savedData);
+			if( props.quests == null ) props.quests = [];
+			if( props.rem == null ) props.rem = [];
 		} catch( e : Dynamic ) {
 			savedData = null;
 		}
@@ -97,6 +75,10 @@ class Game implements haxe.Public {
 		initPixelFilter(props.zoom);
 		
 		world = new World();
+		
+		for( r in props.rem )
+			world.removed[r % World.SIZE][Std.int(r / World.SIZE)] = true;
+		
 		world.draw();
 		scroll = { x : (props.pos.x + 0.5) * Const.SIZE, y : (props.pos.y + 0.5) * Const.SIZE, mc : new SPR(), curZ : props.zoom, tz : 1. };
 		scroll.mc.x = -1000;
@@ -232,12 +214,25 @@ class Game implements haxe.Public {
 			props.zoom--;
 		case CAllowSave:
 			props.canSave = true;
+		case CWeb:
+			index = props.web;
+			props.web++;
+			updateWeb();
+		case CNpc:
+			index = props.npc;
+			props.npc++;
+		case CGoldCoin:
+			props.gold++;
+		case CKey:
+			props.keys++;
 		}
 		var t : Dynamic = Chests.t[Type.enumIndex(k)];
 		if( t == null )
 			throw "Missing text for " + k + " (" + Type.enumIndex(k) + ")";
 		if( index != null )
 			t = t[index];
+		if( t == null )
+			t = { name : "???", sub : "" };
 		popup("You got <font color='#ff0000'>"+t.name+"</font>", t.sub);
 	}
 	
@@ -252,8 +247,7 @@ class Game implements haxe.Public {
 	}
 	
 	function updateWeb() {
-		trace(props.web);
-		var parts = ["banner", "adwords", "p0banner", "social", "shiro"];
+		var parts = ["banner", "p0banner", "social"];
 		for( i in 0...parts.length )
 			js("show('" + parts[i] + "'," + (i < props.web) + ")");
 	}
@@ -356,11 +350,13 @@ class Game implements haxe.Public {
 					updateWeb();
 				}
 			}
+			if( Key.isToggled("S".code) && Key.isDown(K.CONTROL) )
+				save();
 		}
 				
 		if( props.monsters > 0 ) {
 			for( m in world.monsters ) {
-				if( !hasMonsters )
+				if( !has.monsters )
 					m.e = new Monster(m.x, m.y);
 				if( m.e != null ) {
 					m.e.update(dt);
@@ -374,16 +370,26 @@ class Game implements haxe.Public {
 					}
 				}
 			}
-			hasMonsters = true;
+			has.monsters = true;
 		}
 		
-		if( props.canSave && !hasSavePoints ) {
-			hasSavePoints = true;
+		if( props.canSave && !has.savePoints ) {
+			has.savePoints = true;
 			for( p in world.getPos(SavePoint) ) {
 				var e = new Entity(SavePoint, p.x, p.y);
 				e.mc.alpha = 0.3;
 				e.y += 3 / Const.SIZE;
 				entities.push(e);
+			}
+		}
+		
+		if( props.npc > 0 && !has.npc ) {
+			has.npc = true;
+			for( n in world.npcs ) {
+				var e = new Entity(Hero, n.x, n.y);
+				n.e = e;
+				entities.push(n.e);
+				world.t[n.x][n.y] = Lock;
 			}
 		}
 		
