@@ -6,7 +6,7 @@
   <frame>
     <library>
       <clip id="Sharepoint__" />
-      <font id="BmpFont" name="BmpFont" import="gfx\04B_03__.TTF" glyphs="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!," size="19492" modified="25/03/2003 19:22:06" />
+      <font id="BmpFont" name="BmpFont" import="gfx\04B_03__.TTF" glyphs="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!,()-" size="19492" modified="25/03/2003 19:22:06" />
     </library>
   </frame>
 </movie>

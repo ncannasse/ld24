@@ -37,7 +37,7 @@
   </compileTargets>
   <!-- Assets to embed into the output SWF -->
   <library>
-    <asset path="gfx\04B_03__.TTF" id="BmpFont" glyphs="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!," />
+    <asset path="gfx\04B_03__.TTF" id="BmpFont" glyphs="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!,()-" />
   </library>
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>

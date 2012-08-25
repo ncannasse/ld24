@@ -34,6 +34,7 @@ class Game implements haxe.Public {
 			life : 0,
 			monsters : 0,
 			weapons : 0,
+			web : 0,
 			pos : { x : 21, y : 76 },
 			canSave : false,
 			chests : [],
@@ -46,6 +47,7 @@ class Game implements haxe.Public {
 			scroll : 2,
 			color : 2,
 			life : 0,
+			web : 0,
 			monsters : 1,
 			weapons : 1,
 			pos : { x : 42, y : 73 },
@@ -60,6 +62,7 @@ class Game implements haxe.Public {
 			scroll : 2,
 			color : 4,
 			life : 0,
+			web : 0,
 			monsters : 1,
 			weapons : 1,
 			pos : { x : 21, y : 76 },
@@ -116,6 +119,8 @@ class Game implements haxe.Public {
 		
 		if( props.chests.length == 0 )
 			getChest(CRightCtrl, 0, 0);
+			
+		updateWeb();
 	}
 	
 	function save() {
@@ -246,6 +251,13 @@ class Game implements haxe.Public {
 		root.addChild(mc);
 	}
 	
+	function updateWeb() {
+		trace(props.web);
+		var parts = ["banner", "adwords", "p0banner", "social", "shiro"];
+		for( i in 0...parts.length )
+			js("show('" + parts[i] + "'," + (i < props.web) + ")");
+	}
+	
 	function update() {
 		Timer.update();
 		
@@ -338,6 +350,10 @@ class Game implements haxe.Public {
 				if( Key.isDown("Z".code) ) {
 					props.zoom += delta;
 					initPixelFilter(props.zoom);
+				}
+				if( Key.isDown("W".code) ) {
+					props.web += delta;
+					updateWeb();
 				}
 			}
 		}

@@ -71,15 +71,15 @@ ADVANCED GAMEPLAY
 
 
 WEB
-	- banner
+	x banner
 
-	- p0rn banner
+	x p0rn banner
 
 	- adwords
 
 	- ingame advertising
 
-	- social sharing icons
+	x social sharing icons
 
 	- author infos (twitter, blog, etc.)
 
