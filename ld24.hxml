@@ -1,0 +1,8 @@
+-cp src
+-cp gfx
+-cp lib
+-swf ld24.swf
+-swf-header 800:600:40:000000
+--flash-strict
+-swf-version 10
+-main Game

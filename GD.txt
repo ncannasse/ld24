@@ -1,0 +1,102 @@
+Evolugame
+=========
+
+A game where you unlock game features as you play it
+
+List :
+
+TUTO
+
+	- start screen (because it needs to start somewhere)
+
+	- left direction keys (because you need to go somewhere)
+
+	- right direction key (because left is boring)
+
+	- 2D movement (because there's nowhere left to go)
+
+	- scrolling
+
+	- action key (open doors)
+
+	- monsters
+
+
+BASIC GAMEPLAY
+	
+	- sword
+
+	- bow (distant action)
+
+	- axe (cut tree)
+
+	- hammer (break stone)
+
+	- weapon selection
+
+	- life bar
+
+	- heal point
+
+	- save point
+	
+WORLD
+
+	- secret passages
+
+	- keys
+
+	- locked doors
+
+	- dungeons
+
+ADVANCED GAMEPLAY
+
+	- trap (because people ALWAYS fell for it)
+	big red button ?
+	spawn monster around
+	
+
+	- acheivements
+		monsters killed
+		doors opened
+		bushes cut	
+
+	- quests (npc)
+
+
+	- experience
+
+	- level up
+
+	- monster farming (level 20 ?)
+
+
+WEB
+	- banner
+
+	- p0rn banner
+
+	- adwords
+
+	- ingame advertising
+
+	- social sharing icons
+
+	- author infos (twitter, blog, etc.)
+	
+VISUAL/SOUND
+
+	- color modes : 16 colors, 8 bits (fixed), 16 bits, RGB
+
+	- resolution : medium (quite fast to find, double quality), high (2x view zone)
+
+	- mode 7 ?
+
+	- sfx
+	
+	- music (buzer 8 bit and 16 bits ?)
+
+MISC
+
+
