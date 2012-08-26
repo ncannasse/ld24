@@ -1,5 +1,8 @@
 using Common;
 
+class Music1 extends flash.media.Sound {
+}
+
 class Game implements haxe.Public {
 	
 	var root : SPR;
@@ -28,6 +31,7 @@ class Game implements haxe.Public {
 	
 	var circleSize : Float;
 	var mask : SPR;
+	var music : Music1;
 	
 	static var has = {
 		monsters : false,
@@ -62,6 +66,7 @@ class Game implements haxe.Public {
 		level : 1,
 		porn : false,
 		sounds : false,
+		music : false,
 	};
 	public static var props = DEF_PROPS;
 	
@@ -83,6 +88,8 @@ class Game implements haxe.Public {
 	}
 	
 	function init() {
+			
+		music = new Music1();
 		
 		monsters = [];
 		entities = [];
@@ -126,6 +133,9 @@ class Game implements haxe.Public {
 		
 		if( props.chests.length == 0 )
 			getChest(CRightCtrl, 0, 0);
+			
+		if( props.music )
+			music.play(2, 99999);
 			
 		updateUI();
 		updateWeb();
@@ -367,8 +377,10 @@ class Game implements haxe.Public {
 		case CFarming:
 			// no
 		case CExit:
-			hero.teleport(60, 42);
-			initDungeon(false);
+			haxe.Timer.delay(function() {
+				hero.teleport(60, 42);
+				initDungeon(false);
+			},3000);
 		case CPrincess:
 			win();
 		case CPorn:
@@ -376,6 +388,9 @@ class Game implements haxe.Public {
 			updateWeb();
 		case CSounds:
 			props.sounds = true;
+		case CMusic:
+			props.music = true;
+			music.play(0, 99999);
 		}
 		Sounds.play(sound);
 		var t : Dynamic = Chests.t[Type.enumIndex(k)];
@@ -400,8 +415,11 @@ class Game implements haxe.Public {
 	}
 	
 	function gameOver() {
+		if( hero.lock )
+			return;
 		hero.lock = true;
 		hero.target = null;
+		hero.moving = false;
 		hero.explode();
 		hero.remove();
 		Sounds.play("gameOver");
@@ -556,7 +574,7 @@ class Game implements haxe.Public {
 				if( d < 0.64 && m.deathHit() && hero.hitRecover <= 0 ) {
 					props.life--;
 					updateUI();
-					if( props.life <= 0 && !hero.lock )
+					if( props.life <= 0 )
 						gameOver();
 					else {
 						hero.hitRecover = 30;

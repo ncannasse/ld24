@@ -17,6 +17,7 @@ enum ChestKind {
 	CExit;
 	CPorn;
 	CSounds;
+	CMusic;
 	// misc
 	CTitleScreen;
 	CRightCtrl;
@@ -49,7 +50,7 @@ class Chests  {
 			{ name : "Powerful Monsters", sub : "Make sure you have saved your game" },
 		],
 		[
-			{ name : "Sword", sub : "Now you can kill the evil monsters" },
+			{ name : "Sword", sub : "Now you can kill the evil monsters, and cut bushes" },
 		],
 		[
 			{ name : "VGA Resolution", sub : "Now it looks like some good-old game !" },
@@ -71,6 +72,7 @@ class Chests  {
 		{ name : "Triforce", sub : "Dungeon cleared ! Time to go back to overworld !" },
 		{ name : "P0rn Banner", sub : "Classic ads don't make enough money..." },
 		{ name : "Sounds FX", sub : "The game looks much more alive this way" },
+		{ name : "Music", sub : "Always good for better ambient" },
 		// misc
 		{ name : "Title Screen", sub : "There's always a starting point somewhere" },
 		{ name : "Right Key", sub : "There seems to be some chest to open this way" },
