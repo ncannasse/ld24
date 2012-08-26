@@ -14,6 +14,8 @@ enum EKind {
 	Hero;
 	HeroUp;
 	Bat;
+	Knight;
+	Fireball;
 }
 
 class Entity
@@ -48,7 +50,7 @@ class Entity
 		frame = Std.random(1000);
 		animSpeed = 0.3;
 		
-		bounds = { x : 4, w : 8, y : 8, h : 9 };
+		bounds = { x : 4, w : 8, y : 8, h : 8 };
 		
 		mc = new SPR();
 		bmp = new flash.display.Bitmap();
@@ -76,8 +78,13 @@ class Entity
 		
 	}
 	
-	public function explode() {
-		Part.explode(bmp.bitmapData, Std.int(mc.x), Std.int(mc.y));
+	public function teleport(tx, ty) {
+		x = ix = tx;
+		y = iy = ty;
+	}
+	
+	public function explode( p = 100 ) {
+		Part.explode(bmp.bitmapData, Std.int(mc.x), Std.int(mc.y), p);
 	}
 	
 	function updatePos(dt:Float) {

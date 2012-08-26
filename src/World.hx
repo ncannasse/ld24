@@ -29,10 +29,17 @@ enum Block {
 	Dungeon;
 	DungeonSoil;
 	DungeonWall;
+	DungeonStat;
+	DungeonStairs;
+	DungeonFakeWall;
+	DungeonPuzzle;
+	MonsterGenerator;
+	FakeTree;
 	// extra
 	DarkDungeon;
 	Lock;
 	Free;
+	DungeonFakeDark;
 }
 
 class World {
@@ -40,7 +47,7 @@ class World {
 	public static inline var SIZE = 98;
 	
 	public var t : Array<Array<Block>>;
-	public var monsters : Array<{ x : Int, y : Int, e : Monster, id : Entity.EKind }>;
+	public var monsters : Array<{ x : Int, y : Int, id : Entity.EKind }>;
 	public var chests : Array<{ id : Chests.ChestKind, x : Int, y : Int, e : Entity }>;
 	public var npcs : Array < { x:Int, y:Int, e:Entity }>;
 	
@@ -95,10 +102,10 @@ class World {
 		if( removed[x][y] )
 			return false;
 		return switch( t[x][y] ) {
-		case Dark, Tree, Water, Bush, Rock, Cactus, Lock, Door, DarkDungeon, DungeonWall: true;
-		case BridgeUD, BridgeLR, Dungeon: false;
-		case Field, SavePoint, Sand, Free, DungeonSoil: false;
-		case SandBank, RiverBank, Detail, SandDetail: false;
+		case Dark, Tree, Water, Bush, Rock, Cactus, Lock, Door, DarkDungeon, DungeonWall, DungeonStat: true;
+		case BridgeUD, BridgeLR, Dungeon, MonsterGenerator: false;
+		case Field, SavePoint, Sand, Free, DungeonSoil, FakeTree: false;
+		case SandBank, RiverBank, Detail, SandDetail, DungeonStairs, DungeonFakeWall, DungeonFakeDark, DungeonPuzzle : false;
 		}
 	}
 	
@@ -107,7 +114,7 @@ class World {
 			return Field;
 		var b = t[x][y];
 		return switch( b ) {
-		case Dark, Tree, Bush, Rock, SavePoint, Cactus, Lock, Free, Door, Dungeon:
+		case Dark, Tree, Bush, Rock, SavePoint, Cactus, Lock, Free, Door, Dungeon, FakeTree:
 			if( rec ) return null;
 			var cur : Block = null;
 			var s = getSoil(x, y - 1, true);
@@ -124,11 +131,11 @@ class World {
 			if( rec ) null else Water;
 		case Field, Sand, DungeonSoil:
 			b;
-		case DungeonWall:
-			b;
+		case DungeonWall,DungeonStat,DungeonStairs,DungeonFakeWall,DungeonPuzzle,MonsterGenerator:
+			DungeonSoil;
 		case Detail, RiverBank, SandBank, SandDetail:
 			null;
-		case DarkDungeon:
+		case DarkDungeon, DungeonFakeDark:
 			null;
 		};
 	}
@@ -137,7 +144,7 @@ class World {
 		if( removed[x][y] )
 			return false;
 		removed[x][y] = true;
-		Game.props.rem.push(x + y * SIZE);
+		Game.props.rem.push(x + (y + (Game.props.dungeon?SIZE:0)) * SIZE);
 		draw();
 		var b = removedBitmaps[x][y];
 		if( b != null )
@@ -210,7 +217,7 @@ class World {
 				case Dark:
 					if( rnd.random(3) == 0 )
 						putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), 0, true);
-				case BridgeLR, BridgeUD, SavePoint, Door, Dungeon:
+				case BridgeLR, BridgeUD, SavePoint, Door, Dungeon, DungeonStat,DungeonStairs, DungeonWall, DungeonFakeWall,DungeonPuzzle,MonsterGenerator,FakeTree:
 					putBlock(x, y, b);
 				default:
 				}
@@ -270,10 +277,10 @@ class World {
 		case 0x1EDA02:
 			return Bush;
 		case 0xDA0205:
-			monsters.push( { x:x, y:y, e:null, id : Monster } );
+			monsters.push( { x:x, y:y, id : Monster } );
 			return decodeColor(bmp, x, y - 1);
 		case 0xFD2B2E:
-			monsters.push( { x:x, y:y, e:null, id : Bat } );
+			monsters.push( { x:x, y:y, id : Bat } );
 			return decodeColor(bmp, x, y - 1);
 		case 0x9E9E9E:
 			return Rock;
@@ -296,6 +303,23 @@ class World {
 			return DungeonSoil;
 		case 0xC5D8C6:
 			return DungeonWall;
+		case 0x4E7450:
+			return DungeonStat;
+		case 0xA66E6E:
+			return DungeonStairs;
+		case 0xA70204:
+			monsters.push( { x:x, y:y, id : Knight } );
+			return decodeColor(bmp, x, y - 1);
+		case 0x92AFA7:
+			return DungeonFakeWall;
+		case 0x392D39:
+			return DungeonFakeDark;
+		case 0x4DFDBA:
+			return DungeonPuzzle;
+		case 0x973902:
+			return MonsterGenerator;
+		case 0x0F4D01:
+			return FakeTree;
 		default:
 			if( col & 0xFFFF00 == 0xFFFF00 ) {
 				chests.push( { x:x, y:y, e : null, id : Type.createEnumIndex(Chests.ChestKind,col & 0xFF) } );

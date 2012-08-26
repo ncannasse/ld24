@@ -8,10 +8,13 @@ class Hero extends Entity {
 	public var sword : { dx : Int, dy : Int, pos : Float, speed : Float, mc : SPR };
 	public var moving : Bool;
 	public var push : Float;
+	public var hitRecover : Float;
+	var puzzle : Array<{x:Int,y:Int,s:SPR}>;
 	
 	public function new(x,y) {
 		super(Hero, x, y);
 		dirY = 1;
+		hitRecover = 0;
 	}
 
 	function talk(n: { x:Int, y:Int } ) {
@@ -112,8 +115,22 @@ class Hero extends Entity {
 			frame = 0;
 		if( dirY < 0 ) kind = HeroUp else kind = Hero;
 		super.update(dt);
+		if( hitRecover > 0 ) {
+			hitRecover -= dt;
+			mc.alpha = Math.abs(Math.sin(hitRecover));
+			if( hitRecover <= 0 )
+				mc.alpha = 1;
+		}
 		if( sword != null )
 			updateSword(dt);
+	}
+	
+	function cleanPuzzle() {
+		if( puzzle != null ) {
+			for( p in puzzle )
+				p.s.remove();
+			puzzle = null;
+		}
 	}
 	
 	override function endMove() {
@@ -122,10 +139,35 @@ class Hero extends Entity {
 			if( Game.props.canSave )
 				game.save();
 		case Dungeon:
-			x = ix = 26;
-			y = iy = 57;
-			game.initDungeon();
+			game.getChest(CDungeon, 0, 0);
+		case DungeonPuzzle:
+			if( Game.props.puzzle )
+				return;
+			if( puzzle == null ) puzzle = [];
+			for( p in puzzle )
+				if( p.x == ix && p.y == iy ) {
+					cleanPuzzle();
+					puzzle = [];
+					break;
+				}
+				
+			var s = new SPR();
+			s.graphics.beginFill(0xFFFFFF, 0.5);
+			s.graphics.drawRect(0, 0, Const.SIZE, Const.SIZE);
+			s.x = ix * Const.SIZE;
+			s.y = iy * Const.SIZE;
+			game.dm.add(s, Const.PLAN_BG);
+			puzzle.push( { x:ix, y:iy, s:s } );
+			if( puzzle.length == 13 ) {
+				cleanPuzzle();
+				game.getChest(CPuzzle, 0, 0);
+			}
+			
 		default:
+			cleanPuzzle();
+			
+			if( ix == 26 && iy == 42 && Game.props.dungeon )
+				game.world.remove(26, 40);
 		}
 	}
 	
@@ -149,16 +191,26 @@ class Hero extends Entity {
 		default:
 		}
 		
-		for( m in game.world.monsters )
-			if( m.e != null ) {
-				var dx = (m.e.x * Const.SIZE + 8) - hitX;
-				var dy = (m.e.y * Const.SIZE + 7) - hitY;
-				if( dx * dx + dy * dy < 8*8 ) {
-					m.e.kill();
-					m.e = null;
-					break;
+		var props = Game.props;
+		for( m in game.monsters ) {
+			var dx = (m.x * Const.SIZE + 8) - hitX;
+			var dy = (m.y * Const.SIZE + 7) - hitY;
+			if( dx * dx + dy * dy < 8 * 8 && m.canHit() ) {
+				m.kill();
+				if( props.dungeon ) {
+					props.dmkills++;
+					if( props.dmkills == 7 )
+						game.getChest(CDungeonKills, 0, 0);
 				}
+				if( props.xp >= 0 ) {
+					props.xp += 10;
+					game.updateUI();
+					if( props.xp >= 100 )
+						game.getChest(CLevelUp, 0, 0);
+				}
+				break;
 			}
+		}
 		
 		if( sword.pos < 0 ) {
 			sword.mc.remove();

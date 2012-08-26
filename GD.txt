@@ -46,9 +46,9 @@ WORLD
 	x locked doors
 
 
-	- secret passages
+	x secret passages
 
-	- dungeons
+	x dungeons
 
 ADVANCED GAMEPLAY
 

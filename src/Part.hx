@@ -48,11 +48,11 @@ class Part {
 		mc.parent.removeChild(mc);
 	}
 	
-	public static function explode( bmp : flash.display.BitmapData, px : Int, py : Int ) {
+	public static function explode( bmp : flash.display.BitmapData, px : Int, py : Int, proba = 100 ) {
 		for( x in 0...bmp.width )
 			for( y in 0...bmp.height ) {
 				var c = bmp.getPixel32(x, y);
-				if( c == 0 ) continue;
+				if( c == 0 || Std.random(100) >= proba ) continue;
 				var b = new flash.display.Bitmap(Part.getColorPixel(c));
 				new Part(px + x, py + y, 0, b);
 			}

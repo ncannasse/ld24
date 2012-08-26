@@ -2,6 +2,8 @@ class Monster extends Entity {
 
 	var wait : Float;
 	var start : { x : Float, y : Float };
+	var attack : Bool;
+	public var generated : Bool;
 	
 	public function new(k, x,y) {
 		super(k, x, y);
@@ -9,6 +11,10 @@ class Monster extends Entity {
 		switch( k ) {
 		case Bat:
 			speed = 0.05;
+		case Knight:
+			speed = 0.1;
+		case Fireball:
+			mc.alpha = 0.7;
 		default:
 			speed = 0.03;
 		}
@@ -19,10 +25,36 @@ class Monster extends Entity {
 		wait = (Math.random() + 0.2) * 10;
 	}
 	
+	function endWait() {
+	}
+	
+	public function deathHit() {
+		switch( kind ) {
+		case Knight:
+			return mc.alpha > 0.3;
+		default:
+		}
+		return true;
+		
+	}
+	
+	public function canHit() {
+		switch( kind ) {
+		case Knight:
+			return mc.alpha > 0.8;
+		case Fireball:
+			return false;
+		default:
+		}
+		return true;
+	}
+	
 	override function update(dt:Float) {
-		if( wait > 0 )
+		if( wait > 0 ) {
 			wait -= dt;
-		else {
+			if( wait <= 0 )
+				endWait();
+		} else {
 			switch( kind ) {
 			case Monster:
 				if( target == null ) {
@@ -48,6 +80,35 @@ class Monster extends Entity {
 					} while( (x - start.x) * (x - start.x) + (y - start.y) * (y - start.y) > 16 );
 					target = { x : x, y : y };
 				}
+			case Knight:
+				if( frame > 12 ) {
+					mc.alpha -= dt * 0.03;
+					if( mc.alpha <= 0 ) {
+						frame = 0;
+						wait = 20 + Math.random() * 10;
+						mc.alpha = 1;
+						attack = Std.random(3) != 0;
+						var h = game.hero;
+						do {
+							ix = Std.int(this.x + (Math.random() - 0.5) * 6);
+							iy = Std.int(this.y + (Math.random() - 0.5) * 6);
+						} while( game.world.collide(ix, iy) || (ix - start.x) * (ix - start.x) + (iy - start.y) * (iy - start.y) > 36 || (ix - h.x) * (ix - h.x) + (iy - h.y) * (iy - h.y) < 2 );
+						x = ix;
+						y = iy;
+						if( !game.world.collide(ix, iy + 1) )
+							target = { x : ix, y : y + 1 };
+					}
+				}
+				if( !attack && target == null ) {
+					attack = true;
+					game.monsters.push(new Monster(Fireball, ix, iy));
+				}
+			case Fireball:
+				y += dt * 0.1;
+				if( game.world.collide(Std.int(x), Std.int(y)) ) {
+					kill();
+					return;
+				}
 			default:
 			}
 		}
@@ -55,8 +116,9 @@ class Monster extends Entity {
 	}
 	
 	public function kill() {
-		explode();
+		explode(10);
 		remove();
+		game.monsters.remove(this);
 	}
 	
 }

@@ -17,9 +17,13 @@ class Game implements haxe.Public {
 	var barsDelta : Float;
 	var curColor : { mask : Float, delta : Float, alpha : Float, rgb : Float, k : Float };
 	var shake : { time : Float, power : Float };
+	var generators : Array<{ x : Int, y : Int, time : Float }>;
+	var monsters : Array<Monster>;
 	
 	var saveObj : flash.net.SharedObject;
 	var savedData : String;
+	
+	var uiBar : SPR;
 	
 	static var has = {
 		monsters : false,
@@ -48,6 +52,10 @@ class Game implements haxe.Public {
 		quests : new Array<Int>(),
 		freeMove : false,
 		dungeon : false,
+		dmkills : 0,
+		puzzle : false,
+		xp : -1,
+		level : 1,
 	};
 	public static var props = DEF_PROPS;
 	
@@ -70,6 +78,7 @@ class Game implements haxe.Public {
 	
 	function init() {
 		
+		monsters = [];
 		entities = [];
 		view = new SPR();
 		barsDelta = 0.;
@@ -80,7 +89,7 @@ class Game implements haxe.Public {
 		
 		world = new World(new World.WorldPNG(0, 0));
 		realWorld = world;
-		
+				
 		for( r in props.rem )
 			world.removed[r % World.SIZE][Std.int(r / World.SIZE)] = true;
 		
@@ -104,20 +113,83 @@ class Game implements haxe.Public {
 		hero = new Hero(props.pos.x, props.pos.y);
 
 		if( props.dungeon )
-			initDungeon();
+			initDungeon(true);
 		
 		update();
 		
 		if( props.chests.length == 0 )
 			getChest(CRightCtrl, 0, 0);
 			
-			
+		updateUI();
 		updateWeb();
 	}
 	
-	function initDungeon() {
-		props.dungeon = true;
-		world = new World(new World.DungeonPNG(0, 0));
+	function updateUI() {
+		if( uiBar == null ) {
+			uiBar = new SPR();
+			uiBar.x = 5;
+			uiBar.y = 5;
+			root.addChild(uiBar);
+			uiBar.scaleX = uiBar.scaleY = 2;
+		}
+		var border = 0xF0F0F0;
+		var bg = 0x606060;
+		var g = uiBar.graphics;
+		g.clear();
+		if( props.life > 0 ) {
+			g.beginFill(border);
+			g.drawRect(0, 0, 104, 8);
+			g.beginFill(bg);
+			g.drawRect(2, 2, 100, 4);
+			g.beginFill(0xC00000);
+			g.drawRect(2, 2, props.life * 2, 4);
+		}
+
+		if( props.xp >= 0 ) {
+			g.beginFill(border);
+			g.drawRect(0, 12, 104, 8);
+			g.beginFill(bg);
+			g.drawRect(2, 14, 100, 4);
+			g.beginFill(0x00C000);
+			g.drawRect(2, 14, props.xp, 4);
+		}
+	}
+	
+	function initDungeon(v) {
+		props.dungeon = v;
+		if( v ) {
+			world = new World(new World.DungeonPNG(0, 0));
+			for( r in props.rem ) {
+				var y = Std.int(r / World.SIZE);
+				if( y >= World.SIZE )
+					world.removed[r % World.SIZE][y-World.SIZE] = true;
+			}
+			
+			var hchests = new IntHash();
+			for( c in props.chests )
+				hchests.set(c, true);
+			for( c in world.chests )
+				if( !hchests.exists(c.x + (c.y + World.SIZE) * World.SIZE) ) {
+					c.e = new Entity(Chest,c.x,c.y);
+					c.e.update(0);
+				}
+		}
+		else
+			world = realWorld;
+		
+		for( e in entities )
+			e.remove();
+		
+		for( m in monsters )
+			m.remove();
+		
+		entities = [];
+		monsters = [];
+		
+		has.monsters = false;
+		has.npc = false;
+		has.savePoints = false;
+		
 		world.draw();
 		worldBMP.bitmapData = world.bmp;
 		scroll.x = hero.ix;
@@ -206,7 +278,8 @@ class Game implements haxe.Public {
 	
 	function getChest( k : Chests.ChestKind, x : Int, y : Int ) {
 		doShake();
-		props.chests.push(y * World.SIZE + x);
+		props.chests.push((y + (props.dungeon ? World.SIZE : 0)) * World.SIZE + x);
+		var extra = "";
 		var index : Null<Int> = null;
 		switch( k ) {
 		case CTitleScreen, CRightCtrl:
@@ -248,6 +321,36 @@ class Game implements haxe.Public {
 			props.freeMove = true;
 		case CPushBlock:
 			// nothing
+		case CDungeon:
+			hero.teleport(26, 57);
+			initDungeon(true);
+		case CDungeonKills:
+			world.remove(26, 23);
+		case CPuzzle:
+			props.puzzle = true;
+			world.remove(42, 45);
+		case CDiablo:
+			props.life = 50;
+			props.xp = 0;
+			updateUI();
+		case CLevelUp:
+			props.xp = 0;
+			props.level++;
+			if( props.level == 10 ) {
+				k = CFarming;
+				props.xp = -1;
+				for( m in monsters.copy() )
+					if( m.generated )
+						m.kill();
+				world.remove(55, 14);
+			} else
+				extra = "<font color='#00ff00'>" + props.level + '</font> / 10';
+			updateUI();
+		case CFarming:
+			// no
+		case CExit:
+			hero.teleport(60, 42);
+			initDungeon(false);
 		}
 		var t : Dynamic = Chests.t[Type.enumIndex(k)];
 		if( t == null )
@@ -256,7 +359,7 @@ class Game implements haxe.Public {
 			t = t[index];
 		if( t == null )
 			t = { name : "???", sub : "" };
-		popup("You got <font color='#ff0000'>"+t.name+"</font>", t.sub);
+		popup("You got <font color='#ff0000'>"+t.name+"</font>", t.sub+extra);
 	}
 	
 	function gameOver() {
@@ -376,24 +479,32 @@ class Game implements haxe.Public {
 			if( Key.isToggled("S".code) && Key.isDown(K.CONTROL) )
 				save();
 		}
-				
+
+		
 		if( props.monsters > 0 ) {
-			for( m in world.monsters ) {
-				if( !has.monsters )
-					m.e = new Monster(m.id, m.x, m.y);
-				if( m.e != null ) {
-					m.e.update(dt);
-					var dx = m.e.x - hero.x;
-					var dy = m.e.y - hero.y;
-					var d = dx * dx + dy * dy;
-					if( d < 0.64 ) {
-						props.life--;
-						if( props.life <= 0 && !hero.lock )
-							gameOver();
+			if( !has.monsters ) {
+				has.monsters = true;
+				for( m in world.monsters )
+					monsters.push(new Monster(m.id, m.x, m.y));
+				generators = [];
+				for( w in world.getPos(MonsterGenerator) )
+					generators.push( { x : w.x, y : w.y, time : 0. } );
+			}
+			for( m in monsters ) {
+				m.update(dt);
+				var dx = m.x - hero.x;
+				var dy = m.y - hero.y;
+				var d = dx * dx + dy * dy;
+				if( d < 0.64 && m.deathHit() && hero.hitRecover <= 0 ) {
+					props.life--;
+					updateUI();
+					if( props.life <= 0 && !hero.lock )
+						gameOver();
+					else {
+						hero.hitRecover = 30;
 					}
 				}
 			}
-			has.monsters = true;
 		}
 		
 		if( props.canSave && !has.savePoints ) {
@@ -474,7 +585,30 @@ class Game implements haxe.Public {
 		}
 		
 		if( curColor.alpha > 0.01 )
-			output.draw(pixelFilter,null,new flash.geom.ColorTransform(1,1,1,curColor.alpha));
+			output.draw(pixelFilter, null, new flash.geom.ColorTransform(1, 1, 1, curColor.alpha));
+			
+		for( g in generators ) {
+			var dx = hero.x - g.x;
+			var dy = hero.y - g.y;
+			var d = dx * dx + dy * dy;
+			if( d < 100 && props.xp >= 0 ) {
+				g.time -= dt;
+				if( g.time < 0 ) {
+					var k = switch( Std.random(10) ) {
+					case 3, 4, 5: Entity.EKind.Bat;
+					case 0, 1, 2: Entity.EKind.Monster;
+					case 6, 7: Entity.EKind.Knight;
+					default: null;
+					}
+					if( k != null && monsters.length < 50 ) {
+						var m = new Monster(k, g.x, g.y);
+						m.generated = true;
+						monsters.push(m);
+					}
+					g.time += 50;
+				}
+			}
+		}
 		
 		var size = (Math.ceil(Const.SIZE * scroll.curZ) >> 1) + barsDelta;
 		if( props.bars || size < output.height * 0.5  ) {
@@ -484,6 +618,8 @@ class Game implements haxe.Public {
 			if( !props.bars )
 				barsDelta += 5 * dt;
 		}
+		
+		dm.ysort(Const.PLAN_ENTITY);
 	}
 	
 	function applyMask(delta, mask) {

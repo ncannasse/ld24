@@ -13,10 +13,17 @@ enum ChestKind {
 	CGoldCoin;
 	CKey;
 	CFreeMove;
-	CPushBlock;
+	CDiablo;
+	CExit;
 	// misc
 	CTitleScreen;
 	CRightCtrl;
+	CPushBlock;
+	CDungeon;
+	CDungeonKills;
+	CPuzzle;
+	CLevelUp;
+	CFarming;
 }
 
 class Chests  {
@@ -36,6 +43,7 @@ class Chests  {
 		],
 		[
 			{ name : "Monsters !", sub : "Be careful not to touch them !" },
+			{ name : "Powerful Monsters", sub : "Make sure you have saved your game" },
 		],
 		[
 			{ name : "Sword", sub : "Now you can kill the evil monsters" },
@@ -46,8 +54,9 @@ class Chests  {
 		{ name : "Save Points", sub : "An evolutation that changed gaming forever..." },
 		[
 			{ name : "Ad Banner", sub : "Developers have somehow to pay for their own food, no ?" },
-			{ name : "P0rn Banner", sub : "Classic ads don't make enough money..." },
 			{ name : "Social Links", sub : "Share with your friends !" },
+			{ name : "Author Links", sub : "Let's be independant !" },
+			{ name : "P0rn Banner", sub : "Classic ads don't make enough money..." },
 		],
 		[
 			{ name : "NPC", sub : "It's nice to be able to talk to someone !" },
@@ -56,10 +65,17 @@ class Chests  {
 		{ name : "Gold Coin", sub : "This is a shiny piece of gold !" },
 		{ name : "Key", sub : "You found a key !!! What does it open ?" },
 		{ name : "Free Movement", sub : "Looks like it's time for some action/adventure !" },
-		{ name : "Secret Block !", sub : "Ta-da-da-dam !" },
+		{ name : "Diablo Mode", sub : "A life bar and some XP system !" },
+		{ name : "Triforce", sub : "Dungeon cleared ! Time to go back to overworld !" },
 		// misc
 		{ name : "Title Screen", sub : "There's always a starting point somewhere" },
 		{ name : "Right Key", sub : "There seems to be some chest to open this way" },
+		{ name : "Secret Block !", sub : "Ta-da-da-dam !" },
+		{ name : "Dungeons", sub : "My passion : explore dark caves filled with hungry monsters" },
+		{ name : "Killed-all-monsters", sub : "Good boy ! You get a bonus for this !" },
+		{ name : "Puzzle Solved !", sub : "Real adventurers must be strong AND smart" },
+		{ name : "Level Up !", sub : "You have reached level " },
+		{ name : "Farming !", sub : "What that ACTUALLY funny ?" },
 	];
 	
 }
