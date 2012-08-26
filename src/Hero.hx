@@ -37,6 +37,11 @@ class Hero extends Entity {
 				p.quests[0] = 2;
 			}
 			game.popup("Thank you for your <font color='#4040FF'>gold coin</font> !", "You can now open doors with keys !");
+		case "59/31":
+			if( p.quests[1] == 0 ) {
+				p.quests[1] = 1;
+				game.getChest(CPrincess, 0, 0);
+			}
 		default:
 			trace("Unknown NPC @" + [n.x, n.y]);
 		}

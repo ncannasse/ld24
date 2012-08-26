@@ -15,6 +15,7 @@ enum ChestKind {
 	CFreeMove;
 	CDiablo;
 	CExit;
+	CPorn;
 	// misc
 	CTitleScreen;
 	CRightCtrl;
@@ -24,21 +25,22 @@ enum ChestKind {
 	CPuzzle;
 	CLevelUp;
 	CFarming;
+	CPrincess;
 }
 
 class Chests  {
 	
 	public static var t : Array<Dynamic> = [
-		{ name : "Left Key", sub : "Always right is boring !" },
-		{ name : "2D Movement", sub : "You can't go anywhere else anyway" },
+		{ name : "Left Key", sub : "Always going right is boring !" },
+		{ name : "2D Movement", sub : "Lucky ! You can't go anywhere else anyway" },
 		[
 			{ name : "Basic Scrolling", sub : "You want to see where you're heading, right ?" },
 			{ name : "Smoother Scrolling", sub : "Will save you some headache" },
 		],
 		[
-			{ name : "64 Colors Display", sub : "OMG ! Color !!" },
-			{ name : "128 Colors Display", sub : "Mooorreee !! Coloooor !!" },
-			{ name : "512 Colors Display", sub : "This is almost real graphics, no ?" },
+			{ name : "16 Colors Display", sub : "OMG ! Color !!" },
+			{ name : "64 Colors Display", sub : "Mooorreee !! Coloooor !!" },
+			{ name : "256 Colors Display", sub : "This is almost real graphics, no ?" },
 			{ name : "True Colors Display", sub : "At last, RGB !" },
 		],
 		[
@@ -49,14 +51,14 @@ class Chests  {
 			{ name : "Sword", sub : "Now you can kill the evil monsters" },
 		],
 		[
-			{ name : "VGA Resolution", sub : "Now that looks like some old PC game !" },
+			{ name : "VGA Resolution", sub : "Now it looks like some good-old game !" },
+			{ name : "HD Resolution", sub : "Sorry, no 3D yet !" },
 		],
-		{ name : "Save Points", sub : "An evolutation that changed gaming forever..." },
+		{ name : "Save Points", sub : "An evolution that changed gaming forever..." },
 		[
 			{ name : "Ad Banner", sub : "Developers have somehow to pay for their own food, no ?" },
-			{ name : "Social Links", sub : "Share with your friends !" },
 			{ name : "Author Links", sub : "Let's be independant !" },
-			{ name : "P0rn Banner", sub : "Classic ads don't make enough money..." },
+			{ name : "Social Links", sub : "Share with your friends !" },
 		],
 		[
 			{ name : "NPC", sub : "It's nice to be able to talk to someone !" },
@@ -67,6 +69,7 @@ class Chests  {
 		{ name : "Free Movement", sub : "Looks like it's time for some action/adventure !" },
 		{ name : "Diablo Mode", sub : "A life bar and some XP system !" },
 		{ name : "Triforce", sub : "Dungeon cleared ! Time to go back to overworld !" },
+		{ name : "P0rn Banner", sub : "Classic ads don't make enough money..." },
 		// misc
 		{ name : "Title Screen", sub : "There's always a starting point somewhere" },
 		{ name : "Right Key", sub : "There seems to be some chest to open this way" },
@@ -76,6 +79,7 @@ class Chests  {
 		{ name : "Puzzle Solved !", sub : "Real adventurers must be strong AND smart" },
 		{ name : "Level Up !", sub : "You have reached level " },
 		{ name : "Farming !", sub : "What that ACTUALLY funny ?" },
+		{ name : "Princess", sub : "Time to make new adventurers, maybe ?" },
 	];
 	
 }

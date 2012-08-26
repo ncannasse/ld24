@@ -101,8 +101,6 @@ class Title {
 				haxe.Timer.delay(start,10);
 				return;
 			}
-		if( Game.props.debug )
-			start();
 	}
 	
 	function start() {

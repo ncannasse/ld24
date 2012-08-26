@@ -63,6 +63,11 @@ class Entity
 			shade.graphics.drawRect(2, 12, 11, 6);
 			game.dm.add(shade, Const.PLAN_SHADE);
 		case SavePoint:
+		case NPC:
+			animSpeed = 0;
+			frame = 0;
+			if( iy == 31 && ix == 59 )
+				frame = 1;
 		default:
 			shade = new SPR();
 			shade.graphics.beginFill(0, 0.1);

@@ -10,6 +10,7 @@ class Game implements haxe.Public {
 	var scroll : { x : Float, y : Float, mc : SPR, curZ : Float, tz : Float };
 	var hero : Hero;
 	var output : BMP;
+	var outputBMP : flash.display.Bitmap;
 	var pixelFilter : BMP;
 	var dm : DepthManager;
 	
@@ -25,6 +26,9 @@ class Game implements haxe.Public {
 	
 	var uiBar : SPR;
 	
+	var circleSize : Float;
+	var mask : SPR;
+	
 	static var has = {
 		monsters : false,
 		npc : false,
@@ -32,7 +36,6 @@ class Game implements haxe.Public {
 	};
 	
 	static var DEF_PROPS = {
-		debug : true,
 		zoom : 4,
 		bars : true,
 		left : false,
@@ -42,6 +45,7 @@ class Game implements haxe.Public {
 		monsters : 0,
 		weapons : 0,
 		web : 0,
+		nchests : 0,
 		pos : { x : 21, y : 76 },
 		canSave : false,
 		chests : new Array<Int>(),
@@ -56,6 +60,7 @@ class Game implements haxe.Public {
 		puzzle : false,
 		xp : -1,
 		level : 1,
+		porn : false,
 	};
 	public static var props = DEF_PROPS;
 	
@@ -83,7 +88,8 @@ class Game implements haxe.Public {
 		view = new SPR();
 		barsDelta = 0.;
 		output = new BMP(root.stage.stageWidth, root.stage.stageHeight);
-		root.addChild(new flash.display.Bitmap(output));
+		outputBMP = new flash.display.Bitmap(output);
+		root.addChild(outputBMP);
 		
 		initPixelFilter(props.zoom);
 		
@@ -157,6 +163,14 @@ class Game implements haxe.Public {
 	
 	function initDungeon(v) {
 		props.dungeon = v;
+		
+		
+		for( c in world.chests )
+			if( c.e != null ) {
+				c.e.remove();
+				c.e = null;
+			}
+		
 		if( v ) {
 			world = new World(new World.DungeonPNG(0, 0));
 			for( r in props.rem ) {
@@ -164,18 +178,18 @@ class Game implements haxe.Public {
 				if( y >= World.SIZE )
 					world.removed[r % World.SIZE][y-World.SIZE] = true;
 			}
-			
-			var hchests = new IntHash();
-			for( c in props.chests )
-				hchests.set(c, true);
-			for( c in world.chests )
-				if( !hchests.exists(c.x + (c.y + World.SIZE) * World.SIZE) ) {
-					c.e = new Entity(Chest,c.x,c.y);
-					c.e.update(0);
-				}
 		}
 		else
 			world = realWorld;
+			
+		var hchests = new IntHash();
+		for( c in props.chests )
+			hchests.set(c, true);
+		for( c in world.chests )
+			if( !hchests.exists(c.x + (c.y + (v?World.SIZE:0)) * World.SIZE) ) {
+				c.e = new Entity(Chest,c.x,c.y);
+				c.e.update(0);
+			}
 		
 		for( e in entities )
 			e.remove();
@@ -351,6 +365,11 @@ class Game implements haxe.Public {
 		case CExit:
 			hero.teleport(60, 42);
 			initDungeon(false);
+		case CPrincess:
+			win();
+		case CPorn:
+			props.porn = true;
+			updateWeb();
 		}
 		var t : Dynamic = Chests.t[Type.enumIndex(k)];
 		if( t == null )
@@ -360,6 +379,17 @@ class Game implements haxe.Public {
 		if( t == null )
 			t = { name : "???", sub : "" };
 		popup("You got <font color='#ff0000'>"+t.name+"</font>", t.sub+extra);
+	}
+	
+	function win() {
+		hero.lock = true;
+		circleSize = 300.;
+		mask = new SPR();
+		mask.x = output.width / 2;
+		mask.y = output.height / 2;
+		root.addChild(mask);
+		outputBMP.mask = mask;
+		update();
 	}
 	
 	function gameOver() {
@@ -373,9 +403,11 @@ class Game implements haxe.Public {
 	}
 	
 	function updateWeb() {
-		var parts = ["banner", "p0banner", "social"];
+		var parts = ["banner", "author", "social"];
 		for( i in 0...parts.length )
 			js("show('" + parts[i] + "'," + (i < props.web) + ")");
+		if( props.porn )
+			js("show('p0banner',true)");
 	}
 	
 	function update() {
@@ -384,6 +416,7 @@ class Game implements haxe.Public {
 		if( hero == null )
 			return;
 		
+			
 		switch( props.scroll ) {
 		case 0:
 			// no
@@ -398,6 +431,43 @@ class Game implements haxe.Public {
 		
 		var dt = Timer.tmod;
 				
+		if( circleSize > 200 ) {
+			circleSize -= dt;
+			mask.graphics.clear();
+			mask.graphics.beginFill(0, 0.5);
+			mask.graphics.drawCircle(0, 0, circleSize);
+			if( circleSize <= 200 ) {
+				var letters = "Congratulations !".split("");
+				var colors = ["FF0000", "00FF00", "FFFFFF", "FFFF00", "FF00FF", "00FFFF"];
+				var c = -1;
+				for( i in 0...letters.length ) {
+					var col;
+					do {
+						col = Std.random(colors.length);
+					} while( col == c );
+					c = col;
+					letters[i] = "<font color='#" + colors[c] + "'>" + letters[i] + '</font>';
+				}
+				var p = makePanel(letters.join(""), "You completed the game !");
+				p.y = 0;
+				root.addChild(p);
+				
+				var dun = new World(new World.DungeonPNG(0, 0));
+				var gold = 0, total = 0;
+				for( c in world.chests.concat(dun.chests) ) {
+					switch( c.id ) {
+					case CGoldCoin: gold++;
+					default:
+					}
+					total++;
+				}
+				
+				var p = makePanel("You found " + (props.gold + 1) + "/"+gold+" Gold Coins", "And opened "+(props.nchests+"/"+total)+" chests");
+				p.y = 370;
+				root.addChild(p);
+			}
+		}
+		
 		var tz = scroll.tz * props.zoom;
 		var zooming = true;
 		scroll.curZ = scroll.curZ * 0.8 + tz * 0.2;
@@ -430,6 +500,7 @@ class Game implements haxe.Public {
 				if( c.e != null && c.x == hero.ix && c.y == hero.iy ) {
 					c.e.remove();
 					c.e = null;
+					props.nchests++;
 					getChest(c.id,c.x,c.y);
 				}
 			hero.moving = false;
@@ -456,30 +527,9 @@ class Game implements haxe.Public {
 			}
 		}
 
-		if( props.debug ) {
-			var delta = Key.isToggled(K.NUMPAD_ADD) ? 1 : Key.isToggled(K.NUMPAD_SUBTRACT) ? -1 : 0;
-			if( delta != 0 ) {
-				if( Key.isDown("C".code) ) {
-					doShake();
-					props.color += delta;
-				}
-				if( Key.isDown("S".code) ) {
-					doShake();
-					props.scroll += delta;
-				}
-				if( Key.isDown("Z".code) ) {
-					props.zoom += delta;
-					initPixelFilter(props.zoom);
-				}
-				if( Key.isDown("W".code) ) {
-					props.web += delta;
-					updateWeb();
-				}
-			}
-			if( Key.isToggled("S".code) && Key.isDown(K.CONTROL) )
-				save();
-		}
-
+		// cheat code
+		if( Key.isToggled("S".code) && Key.isDown(K.CONTROL) )
+			save();
 		
 		if( props.monsters > 0 ) {
 			if( !has.monsters ) {
@@ -587,6 +637,7 @@ class Game implements haxe.Public {
 		if( curColor.alpha > 0.01 )
 			output.draw(pixelFilter, null, new flash.geom.ColorTransform(1, 1, 1, curColor.alpha));
 			
+		if( generators != null )
 		for( g in generators ) {
 			var dx = hero.x - g.x;
 			var dy = hero.y - g.y;

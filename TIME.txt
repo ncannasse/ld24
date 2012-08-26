@@ -9,3 +9,9 @@ Day 1
 19:30-01:00 : title screen, banners, sand, more gfx
 
 10:00-11:30 : free move, bats, new hero gfx, dungeon start
+
+14:30-17:30 : dungeon complete
+
+17:30-19:00 : win game ok, small fixes
+
+
