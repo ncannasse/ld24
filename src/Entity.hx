@@ -5,12 +5,15 @@ class SpritesPNG extends BMP {
 }
 
 enum EKind {
-	Hero;
+	NPC;
 	Chest;
 	Monster;
 	Sword;
 	SavePoint;
 	Cursor;
+	Hero;
+	HeroUp;
+	Bat;
 }
 
 class Entity
@@ -34,6 +37,7 @@ class Entity
 	var bmp : flash.display.Bitmap;
 	var frame : Float;
 	var game : Game;
+	var bounds : { x : Int, y : Int, w : Int, h : Int };
 	
 	public function new( kind, x, y ) {
 		this.kind = kind;
@@ -43,6 +47,8 @@ class Entity
 		speed = 0.1;
 		frame = Std.random(1000);
 		animSpeed = 0.3;
+		
+		bounds = { x : 4, w : 8, y : 8, h : 9 };
 		
 		mc = new SPR();
 		bmp = new flash.display.Bitmap();
@@ -58,7 +64,7 @@ class Entity
 		default:
 			shade = new SPR();
 			shade.graphics.beginFill(0, 0.1);
-			shade.graphics.drawEllipse(2, 11, 12, 8);
+			shade.graphics.drawEllipse(1, 10, 12, 8);
 			game.dm.add(shade, Const.PLAN_SHADE);
 		}
 		
@@ -96,6 +102,8 @@ class Entity
 				y -= speed;
 		}
 		if( x == target.x && y == target.y ) {
+			ix = Std.int(x);
+			iy = Std.int(y);
 			endMove();
 			target = null;
 		}
@@ -115,8 +123,8 @@ class Entity
 		mc.y = Std.int(y * Const.SIZE) - 2;
 		
 		if( shade != null ) {
-			shade.x = mc.x;
-			shade.y = mc.y;
+			shade.x = mc.x + 0.5;
+			shade.y = mc.y + 0.5;
 		}
 				
 		if( frame >= 0 ) {

@@ -6,6 +6,8 @@ class Hero extends Entity {
 	public var dirX : Int;
 	public var dirY : Int;
 	public var sword : { dx : Int, dy : Int, pos : Float, speed : Float, mc : SPR };
+	public var moving : Bool;
+	public var push : Float;
 	
 	public function new(x,y) {
 		super(Hero, x, y);
@@ -37,32 +39,78 @@ class Hero extends Entity {
 		}
 	}
 	
-	public function move(dx, dy) {
+	function collide(x, y) {
+		if( !game.world.collide(x, y) )
+			return false;
+		switch( game.world.t[x][y] ) {
+		case Door:
+			if( Game.props.quests[0] == 2 && Game.props.keys > 0 ) {
+				Game.props.keys--;
+				game.world.remove(x, y);
+				game.popup("Door <font color='#00ff00'>Opened</font>", Game.props.keys + " keys left");
+			}
+		default:
+		}
+		for( n in game.world.npcs )
+			if( n.x == x && n.y == y )
+				talk(n);
+		return true;
+	}
+	
+	public function move(dx, dy, dt:Float) {
 		dirX = dx;
 		dirY = dy;
-		var x = ix + dx;
-		var y = iy + dy;
-		if( game.world.collide(x, y) ) {
-			switch( game.world.t[x][y] ) {
-			case Door:
-				if( Game.props.quests[0] == 2 && Game.props.keys > 0 ) {
-					Game.props.keys--;
-					game.world.remove(x, y);
-					game.popup("Door <font color='#00ff00'>Opened</font>", Game.props.keys + " keys left");
+		
+		if( Game.props.freeMove ) {
+			
+			var s = speed * dt;
+			
+			var px1 = Std.int((x * Const.SIZE + bounds.x) / Const.SIZE  + dx * s);
+			var px2 = Std.int((x * Const.SIZE + bounds.x + bounds.w - 1) / Const.SIZE  + dx * s);
+			var py1 = Std.int((y * Const.SIZE + bounds.y) / Const.SIZE  + dy * s);
+			var py2 = Std.int((y * Const.SIZE + bounds.y + bounds.h - 1) / Const.SIZE  + dy * s);
+			
+			if( collide(px1, py1) || collide(px2, py1) || collide(px1, py2) || collide(px2, py2) ) {
+				push += dt;
+				if( push > 25 ) {
+					push = 0;
+					if( dirY == 1 && px1 == 64 && py2 == 58 ) {
+						game.world.remove(64, 58);
+						game.world.remove(64, 61);
+						game.getChest(CPushBlock, 0, 0);
+					}
 				}
-			default:
+				return;
 			}
-			for( n in game.world.npcs )
-				if( n.x == x && n.y == y )
-					talk(n);
-			return;
+			push = 0;
+			
+			this.x += dx * s;
+			this.y += dy * s;
+			
+			var nx = Std.int(this.x + (bounds.x + bounds.w * 0.5) / Const.SIZE);
+			var ny = Std.int(this.y + (bounds.y + bounds.h * 0.5) / Const.SIZE);
+			if( nx != ix || ny != iy ) {
+				ix = nx;
+				iy = ny;
+				endMove();
+			}
+			
+			moving = true;
+				
+		} else {
+		
+			var x = ix + dx;
+			var y = iy + dy;
+			if( collide(x, y) )
+				return;
+			target = { x : x, y : y };
 		}
-		ix += dx;
-		iy += dy;
-		target = { x : ix, y : iy };
 	}
 	
 	override function update(dt) {
+		if( target == null && !moving )
+			frame = 0;
+		if( dirY < 0 ) kind = HeroUp else kind = Hero;
 		super.update(dt);
 		if( sword != null )
 			updateSword(dt);
@@ -73,6 +121,10 @@ class Hero extends Entity {
 		case SavePoint:
 			if( Game.props.canSave )
 				game.save();
+		case Dungeon:
+			x = ix = 26;
+			y = iy = 57;
+			game.initDungeon();
 		default:
 		}
 	}
@@ -125,6 +177,5 @@ class Hero extends Entity {
 		sword = { dx : dirX, dy : dirY, pos : 0., speed : 3., mc : smc };
 		updateSword(0);
 	}
-	
 	
 }

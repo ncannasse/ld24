@@ -5,6 +5,8 @@ class Game implements haxe.Public {
 	var root : SPR;
 	var view : SPR;
 	var world : World;
+	var realWorld : World;
+	var worldBMP : flash.display.Bitmap;
 	var scroll : { x : Float, y : Float, mc : SPR, curZ : Float, tz : Float };
 	var hero : Hero;
 	var output : BMP;
@@ -44,6 +46,8 @@ class Game implements haxe.Public {
 		keys : 0,
 		gold : 0,
 		quests : new Array<Int>(),
+		freeMove : false,
+		dungeon : false,
 	};
 	public static var props = DEF_PROPS;
 	
@@ -74,7 +78,8 @@ class Game implements haxe.Public {
 		
 		initPixelFilter(props.zoom);
 		
-		world = new World();
+		world = new World(new World.WorldPNG(0, 0));
+		realWorld = world;
 		
 		for( r in props.rem )
 			world.removed[r % World.SIZE][Std.int(r / World.SIZE)] = true;
@@ -82,7 +87,8 @@ class Game implements haxe.Public {
 		world.draw();
 		scroll = { x : (props.pos.x + 0.5) * Const.SIZE, y : (props.pos.y + 0.5) * Const.SIZE, mc : new SPR(), curZ : props.zoom, tz : 1. };
 		scroll.mc.x = -1000;
-		scroll.mc.addChild(new flash.display.Bitmap(world.bmp));
+		worldBMP = new flash.display.Bitmap(world.bmp);
+		scroll.mc.addChild(worldBMP);
 		dm = new DepthManager(scroll.mc);
 		view.addChild(scroll.mc);
 		
@@ -96,13 +102,26 @@ class Game implements haxe.Public {
 			}
 
 		hero = new Hero(props.pos.x, props.pos.y);
+
+		if( props.dungeon )
+			initDungeon();
 		
 		update();
 		
 		if( props.chests.length == 0 )
 			getChest(CRightCtrl, 0, 0);
 			
+			
 		updateWeb();
+	}
+	
+	function initDungeon() {
+		props.dungeon = true;
+		world = new World(new World.DungeonPNG(0, 0));
+		world.draw();
+		worldBMP.bitmapData = world.bmp;
+		scroll.x = hero.ix;
+		scroll.y = hero.iy;
 	}
 	
 	function save() {
@@ -225,6 +244,10 @@ class Game implements haxe.Public {
 			props.gold++;
 		case CKey:
 			props.keys++;
+		case CFreeMove:
+			props.freeMove = true;
+		case CPushBlock:
+			// nothing
 		}
 		var t : Dynamic = Chests.t[Type.enumIndex(k)];
 		if( t == null )
@@ -306,15 +329,15 @@ class Game implements haxe.Public {
 					c.e = null;
 					getChest(c.id,c.x,c.y);
 				}
-			
+			hero.moving = false;
 			if( (Key.isDown(K.UP) || Key.isDown("Z".code) || Key.isDown("W".code)) && !props.bars )
-				hero.move(0, -1);
+				hero.move(0, -1, dt);
 			if( hero.target == null && (Key.isDown(K.DOWN) || Key.isDown("S".code)) && !props.bars )
-				hero.move(0, 1);
+				hero.move(0, 1, dt);
 			if( hero.target == null && (Key.isDown(K.LEFT) || Key.isDown("Q".code) || Key.isDown("A".code)) && props.left )
-				hero.move( -1, 0);
+				hero.move( -1, 0, dt);
 			if( hero.target == null && Key.isDown(K.RIGHT) || Key.isDown("D".code) )
-				hero.move(1, 0);
+				hero.move(1, 0, dt);
 		}
 		
 		if( hero.sword == null && !hero.lock ) {
@@ -357,7 +380,7 @@ class Game implements haxe.Public {
 		if( props.monsters > 0 ) {
 			for( m in world.monsters ) {
 				if( !has.monsters )
-					m.e = new Monster(m.x, m.y);
+					m.e = new Monster(m.id, m.x, m.y);
 				if( m.e != null ) {
 					m.e.update(dt);
 					var dx = m.e.x - hero.x;
@@ -386,7 +409,7 @@ class Game implements haxe.Public {
 		if( props.npc > 0 && !has.npc ) {
 			has.npc = true;
 			for( n in world.npcs ) {
-				var e = new Entity(Hero, n.x, n.y);
+				var e = new Entity(NPC, n.x, n.y);
 				n.e = e;
 				entities.push(n.e);
 				world.t[n.x][n.y] = Lock;

@@ -3,6 +3,9 @@ using Common;
 @:bitmap("world.png") class WorldPNG extends BMP {
 }
 
+@:bitmap("dungeon.png") class DungeonPNG extends BMP {
+}
+
 @:bitmap("tiles.png") class TilesPNG extends BMP {
 }
 
@@ -23,7 +26,11 @@ enum Block {
 	SandDetail;
 	Cactus;
 	Door;
+	Dungeon;
+	DungeonSoil;
+	DungeonWall;
 	// extra
+	DarkDungeon;
 	Lock;
 	Free;
 }
@@ -33,7 +40,7 @@ class World {
 	public static inline var SIZE = 98;
 	
 	public var t : Array<Array<Block>>;
-	public var monsters : Array<{ x : Int, y : Int, e : Monster }>;
+	public var monsters : Array<{ x : Int, y : Int, e : Monster, id : Entity.EKind }>;
 	public var chests : Array<{ id : Chests.ChestKind, x : Int, y : Int, e : Entity }>;
 	public var npcs : Array < { x:Int, y:Int, e:Entity }>;
 	
@@ -49,14 +56,13 @@ class World {
 	var p0 : flash.geom.Point;
 	var details : Bool;
 	
-	public function new() {
+	public function new( bmp : BMP ) {
 		t = [];
 		monsters = [];
 		chests = [];
 		removed = [];
 		npcs = [];
 		removedBitmaps = [];
-		var bmp = new WorldPNG(0,0);
 		for( x in 0...SIZE ) {
 			t[x] = [];
 			removedBitmaps[x] = [];
@@ -89,9 +95,9 @@ class World {
 		if( removed[x][y] )
 			return false;
 		return switch( t[x][y] ) {
-		case Dark, Tree, Water, Bush, Rock, Cactus, Lock, Door: true;
-		case BridgeUD, BridgeLR: false;
-		case Field, SavePoint, Sand, Free: false;
+		case Dark, Tree, Water, Bush, Rock, Cactus, Lock, Door, DarkDungeon, DungeonWall: true;
+		case BridgeUD, BridgeLR, Dungeon: false;
+		case Field, SavePoint, Sand, Free, DungeonSoil: false;
 		case SandBank, RiverBank, Detail, SandDetail: false;
 		}
 	}
@@ -101,7 +107,7 @@ class World {
 			return Field;
 		var b = t[x][y];
 		return switch( b ) {
-		case Dark, Tree, Bush, Rock, SavePoint, Cactus, Lock, Free, Door:
+		case Dark, Tree, Bush, Rock, SavePoint, Cactus, Lock, Free, Door, Dungeon:
 			if( rec ) return null;
 			var cur : Block = null;
 			var s = getSoil(x, y - 1, true);
@@ -116,9 +122,13 @@ class World {
 			cur;
 		case BridgeLR, BridgeUD, Water:
 			if( rec ) null else Water;
-		case Field, Sand:
+		case Field, Sand, DungeonSoil:
+			b;
+		case DungeonWall:
 			b;
 		case Detail, RiverBank, SandBank, SandDetail:
+			null;
+		case DarkDungeon:
 			null;
 		};
 	}
@@ -151,7 +161,8 @@ class World {
 		details = false;
 		for( x in 0...SIZE )
 			for( y in 0...SIZE ) {
-				var b = getSoil(x,y);
+				var b = getSoil(x, y);
+				if( b == null ) continue;
 				putBlock(x, y, b);
 				switch( b ) {
 				case Water:
@@ -199,7 +210,7 @@ class World {
 				case Dark:
 					if( rnd.random(3) == 0 )
 						putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), 0, true);
-				case BridgeLR, BridgeUD, SavePoint, Door:
+				case BridgeLR, BridgeUD, SavePoint, Door, Dungeon:
 					putBlock(x, y, b);
 				default:
 				}
@@ -223,7 +234,7 @@ class World {
 			bmp.draw(shadeSPR[shade], shadeM);
 		}
 		var tl = tiles[Type.enumIndex(b) - 1];
-		var t = tl[min(rnd.random(tl.length), mrnd?rnd.random(tl.length):99)];
+		var t = tl == null ? null : tl[min(rnd.random(tl.length), mrnd?rnd.random(tl.length):99)];
 		if( t == null || tl.length == 0 ) throw "Not tile for " + b;
 		if( details && rem )
 			removedBitmaps[x][y] = t;
@@ -259,8 +270,11 @@ class World {
 		case 0x1EDA02:
 			return Bush;
 		case 0xDA0205:
-			monsters.push( { x:x, y:y, e:null } );
-			return decodeColor(bmp,x,y-1);
+			monsters.push( { x:x, y:y, e:null, id : Monster } );
+			return decodeColor(bmp, x, y - 1);
+		case 0xFD2B2E:
+			monsters.push( { x:x, y:y, e:null, id : Bat } );
+			return decodeColor(bmp, x, y - 1);
 		case 0x9E9E9E:
 			return Rock;
 		case 0x023ADA:
@@ -274,6 +288,14 @@ class World {
 			return Free;
 		case 0xC49918:
 			return Door;
+		case 0x585F5C:
+			return Dungeon;
+		case 0x0E0B0E:
+			return DarkDungeon;
+		case 0x8A8A8A:
+			return DungeonSoil;
+		case 0xC5D8C6:
+			return DungeonWall;
 		default:
 			if( col & 0xFFFF00 == 0xFFFF00 ) {
 				chests.push( { x:x, y:y, e : null, id : Type.createEnumIndex(Chests.ChestKind,col & 0xFF) } );

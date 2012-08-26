@@ -5,9 +5,9 @@ class Tiles {
 	public static function initTiles( tiles : flash.display.BitmapData, size : Int ) {
 		var colorBG = tiles.getPixel32(tiles.width - 1, tiles.height - 1);
 		var t = [];
-		for( y in 0...Std.int(tiles.width/size) ) {
+		for( y in 0...Std.int(tiles.height/size) ) {
 			t[y] = [];
-			for( x in 0...Std.int(tiles.height/size) ) {
+			for( x in 0...Std.int(tiles.width/size) ) {
 				var b = new flash.display.BitmapData(size, size, true, 0);
 				b.copyPixels(tiles, new flash.geom.Rectangle(x * size, y * size, size, size), new flash.geom.Point(0, 0));
 				if( isEmpty(b,colorBG) ) {

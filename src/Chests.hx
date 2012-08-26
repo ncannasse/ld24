@@ -12,6 +12,8 @@ enum ChestKind {
 	CNpc;
 	CGoldCoin;
 	CKey;
+	CFreeMove;
+	CPushBlock;
 	// misc
 	CTitleScreen;
 	CRightCtrl;
@@ -53,6 +55,8 @@ class Chests  {
 		],
 		{ name : "Gold Coin", sub : "This is a shiny piece of gold !" },
 		{ name : "Key", sub : "You found a key !!! What does it open ?" },
+		{ name : "Free Movement", sub : "Looks like it's time for some action/adventure !" },
+		{ name : "Secret Block !", sub : "Ta-da-da-dam !" },
 		// misc
 		{ name : "Title Screen", sub : "There's always a starting point somewhere" },
 		{ name : "Right Key", sub : "There seems to be some chest to open this way" },
