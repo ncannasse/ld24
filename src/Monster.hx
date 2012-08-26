@@ -101,11 +101,19 @@ class Monster extends Entity {
 				}
 				if( !attack && target == null ) {
 					attack = true;
+					var dx = game.hero.x - ix;
+					var dy = game.hero.y - iy;
+					if( dx*dx+dy*dy < 64 )
+						Sounds.play("fireball");
 					game.monsters.push(new Monster(Fireball, ix, iy));
 				}
 			case Fireball:
 				y += dt * 0.1;
 				if( game.world.collide(Std.int(x), Std.int(y)) ) {
+					var dx = game.hero.x - x;
+					var dy = game.hero.y - y;
+					if( dx*dx+dy*dy < 64 )
+						Sounds.play("fireHit");
 					kill();
 					return;
 				}

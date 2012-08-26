@@ -61,6 +61,7 @@ class Game implements haxe.Public {
 		xp : -1,
 		level : 1,
 		porn : false,
+		sounds : false,
 	};
 	public static var props = DEF_PROPS;
 	
@@ -216,6 +217,7 @@ class Game implements haxe.Public {
 		var d = haxe.Serializer.run(props);
 		if( savedData == d )
 			return;
+		Sounds.play("save");
 		savedData = d;
 		saveObj.setProperty("save",savedData);
 		saveObj.flush();
@@ -292,6 +294,7 @@ class Game implements haxe.Public {
 	
 	function getChest( k : Chests.ChestKind, x : Int, y : Int ) {
 		doShake();
+		var sound = "chest";
 		props.chests.push((y + (props.dungeon ? World.SIZE : 0)) * World.SIZE + x);
 		var extra = "";
 		var index : Null<Int> = null;
@@ -348,6 +351,7 @@ class Game implements haxe.Public {
 			props.xp = 0;
 			updateUI();
 		case CLevelUp:
+			sound = "levelup";
 			props.xp = 0;
 			props.level++;
 			if( props.level == 10 ) {
@@ -370,7 +374,10 @@ class Game implements haxe.Public {
 		case CPorn:
 			props.porn = true;
 			updateWeb();
+		case CSounds:
+			props.sounds = true;
 		}
+		Sounds.play(sound);
 		var t : Dynamic = Chests.t[Type.enumIndex(k)];
 		if( t == null )
 			throw "Missing text for " + k + " (" + Type.enumIndex(k) + ")";
@@ -397,6 +404,7 @@ class Game implements haxe.Public {
 		hero.target = null;
 		hero.explode();
 		hero.remove();
+		Sounds.play("gameOver");
 		var mc = makePanel("Game <font color='#ff0000'>Over</font> !", "Press Esc to return to title screen");
 		mc.y = Std.int((output.height - mc.height) * 0.5);
 		root.addChild(mc);
@@ -552,6 +560,7 @@ class Game implements haxe.Public {
 						gameOver();
 					else {
 						hero.hitRecover = 30;
+						Sounds.play("hit");
 					}
 				}
 			}

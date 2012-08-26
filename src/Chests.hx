@@ -10,12 +10,13 @@ enum ChestKind {
 	CAllowSave;
 	CWeb;
 	CNpc;
-	CGoldCoin;
+	CGoldCoin; // 10
 	CKey;
 	CFreeMove;
 	CDiablo;
 	CExit;
 	CPorn;
+	CSounds;
 	// misc
 	CTitleScreen;
 	CRightCtrl;
@@ -57,7 +58,6 @@ class Chests  {
 		{ name : "Save Points", sub : "An evolution that changed gaming forever..." },
 		[
 			{ name : "Ad Banner", sub : "Developers have somehow to pay for their own food, no ?" },
-			{ name : "Author Links", sub : "Let's be independant !" },
 			{ name : "Social Links", sub : "Share with your friends !" },
 		],
 		[
@@ -70,6 +70,7 @@ class Chests  {
 		{ name : "Diablo Mode", sub : "A life bar and some XP system !" },
 		{ name : "Triforce", sub : "Dungeon cleared ! Time to go back to overworld !" },
 		{ name : "P0rn Banner", sub : "Classic ads don't make enough money..." },
+		{ name : "Sounds FX", sub : "The game looks much more alive this way" },
 		// misc
 		{ name : "Title Screen", sub : "There's always a starting point somewhere" },
 		{ name : "Right Key", sub : "There seems to be some chest to open this way" },
@@ -78,7 +79,7 @@ class Chests  {
 		{ name : "Killed-all-monsters", sub : "Good boy ! You get a bonus for this !" },
 		{ name : "Puzzle Solved !", sub : "Real adventurers must be strong AND smart" },
 		{ name : "Level Up !", sub : "You have reached level " },
-		{ name : "Farming !", sub : "What that ACTUALLY funny ?" },
+		{ name : "Monster Farming !", sub : "What that ACTUALLY funny ?" },
 		{ name : "Princess", sub : "Time to make new adventurers, maybe ?" },
 	];
 	

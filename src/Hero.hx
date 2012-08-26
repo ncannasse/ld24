@@ -10,6 +10,7 @@ class Hero extends Entity {
 	public var push : Float;
 	public var hitRecover : Float;
 	var puzzle : Array<{x:Int,y:Int,s:SPR}>;
+	var sound : Bool;
 	
 	public function new(x,y) {
 		super(Hero, x, y);
@@ -23,6 +24,7 @@ class Hero extends Entity {
 		var p = Game.props;
 		switch( n.x + "/" + n.y ) {
 		case "51/64":
+			Sounds.play("npc");
 			if( p.npc == 1 ) {
 				game.popup("Sorry I have nothing to say to you !", "that's what you get when talking to strangers");
 				return;
@@ -40,6 +42,7 @@ class Hero extends Entity {
 		case "59/31":
 			if( p.quests[1] == 0 ) {
 				p.quests[1] = 1;
+				Sounds.play("princess");
 				game.getChest(CPrincess, 0, 0);
 			}
 		default:
@@ -118,6 +121,14 @@ class Hero extends Entity {
 	override function update(dt) {
 		if( target == null && !moving )
 			frame = 0;
+		else if( iframe%2 == 0 ) {
+			if( !sound ) {
+				sound = true;
+				Sounds.play("walk");
+			}
+		} else
+			sound = false;
+		
 		if( dirY < 0 ) kind = HeroUp else kind = Hero;
 		super.update(dt);
 		if( hitRecover > 0 ) {
@@ -163,6 +174,7 @@ class Hero extends Entity {
 			s.y = iy * Const.SIZE;
 			game.dm.add(s, Const.PLAN_BG);
 			puzzle.push( { x:ix, y:iy, s:s } );
+			Sounds.play("puzzle");
 			if( puzzle.length == 13 ) {
 				cleanPuzzle();
 				game.getChest(CPuzzle, 0, 0);
@@ -202,6 +214,7 @@ class Hero extends Entity {
 			var dy = (m.y * Const.SIZE + 7) - hitY;
 			if( dx * dx + dy * dy < 8 * 8 && m.canHit() ) {
 				m.kill();
+				Sounds.play("kill");
 				if( props.dungeon ) {
 					props.dmkills++;
 					if( props.dmkills == 7 )
@@ -233,6 +246,7 @@ class Hero extends Entity {
 		game.dm.add(smc, Const.PLAN_ENTITY + (dirY < 0 ? -1 : 0));
 		sword = { dx : dirX, dy : dirY, pos : 0., speed : 3., mc : smc };
 		updateSword(0);
+		Sounds.play("sword");
 	}
 	
 }

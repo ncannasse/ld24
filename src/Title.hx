@@ -28,13 +28,12 @@ class Title {
 		game.root.addChild(root);
 		
 		root.addEventListener(flash.events.MouseEvent.CLICK, function(_) start());
-		
-		var curMouse = root.mouseY < 140;
+				
 		root.addEventListener(flash.events.MouseEvent.MOUSE_MOVE, function(_) {
 			var k = root.mouseY < 140;
-			if( curMouse != k && game.hasSave() ) {
+			if( load == k && game.hasSave() ) {
+				Sounds.play("menu");
 				load = !k;
-				curMouse = k;
 			}
 		});
 		
@@ -83,8 +82,10 @@ class Title {
 	
 	function update(_) {
 		for( k in [K.DOWN, K.UP, "Z".code, "W".code, "S".code] )
-			if( Key.isToggled(k) && game.hasSave() )
+			if( Key.isToggled(k) && game.hasSave() ) {
+				Sounds.play("menu");
 				load = !load;
+			}
 		time += 0.2;
 		
 		var d2 = time * 2;

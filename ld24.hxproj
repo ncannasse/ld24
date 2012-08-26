@@ -18,6 +18,7 @@
     <class path="src" />
     <class path="gfx" />
     <class path="lib" />
+    <class path="sfx" />
   </classpaths>
   <!-- Build options -->
   <build>

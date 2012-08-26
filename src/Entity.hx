@@ -40,6 +40,7 @@ class Entity
 	var frame : Float;
 	var game : Game;
 	var bounds : { x : Int, y : Int, w : Int, h : Int };
+	var iframe : Int;
 	
 	public function new( kind, x, y ) {
 		this.kind = kind;
@@ -142,7 +143,7 @@ class Entity
 		if( frame >= 0 ) {
 			var sl = sprites[Type.enumIndex(kind)];
 			frame += animSpeed * Timer.tmod;
-			var iframe = Std.int(frame) % sl.length;
+			iframe = Std.int(frame) % sl.length;
 			bmp.bitmapData = sl[iframe];
 			if( sl.length == 0 )
 				frame = -1;
