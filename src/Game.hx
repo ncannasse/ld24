@@ -1,8 +1,5 @@
 using Common;
 
-class Music1 extends flash.media.Sound {
-}
-
 class Game implements haxe.Public {
 	
 	var root : SPR;
@@ -29,9 +26,10 @@ class Game implements haxe.Public {
 	
 	var uiBar : SPR;
 	
+	var music : flash.media.Sound;
+	
 	var circleSize : Float;
 	var mask : SPR;
-	var music : Music1;
 	
 	static var has = {
 		monsters : false,
@@ -89,7 +87,7 @@ class Game implements haxe.Public {
 	
 	function init() {
 			
-		music = new Music1();
+		music = new flash.media.Sound(new flash.net.URLRequest("music1.mp3"));
 		
 		monsters = [];
 		entities = [];
@@ -240,8 +238,9 @@ class Game implements haxe.Public {
 		flash.external.ExternalInterface.call("eval", s);
 	}
 	
-	function popup( text : String, subText : String = "" ) {
+	function popup( text : String, subText : String = "", dialog = false ) {
 		var mc = new Popup();
+		mc.dialog = dialog;
 		mc.addChild(makePanel(text, subText));
 		mc.y = output.height;
 		mc.targetY = output.height - mc.height;
@@ -377,10 +376,7 @@ class Game implements haxe.Public {
 		case CFarming:
 			// no
 		case CExit:
-			haxe.Timer.delay(function() {
-				hero.teleport(60, 42);
-				initDungeon(false);
-			},3000);
+			// nothing
 		case CPrincess:
 			win();
 		case CPorn:

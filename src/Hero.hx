@@ -19,18 +19,18 @@ class Hero extends Entity {
 	}
 
 	function talk(n: { x:Int, y:Int } ) {
-		if( Popup.has() )
+		if( Popup.hasDialog() )
 			return;
 		var p = Game.props;
 		switch( n.x + "/" + n.y ) {
-		case "51/64":
+		case "51/62":
 			Sounds.play("npc");
 			if( p.npc == 1 ) {
-				game.popup("Sorry I have nothing to say to you !", "that's what you get when talking to strangers");
+				game.popup("Sorry I have nothing to say to you !", "that's what you get when talking to strangers",true);
 				return;
 			}
 			if( p.quests[0] == 0 || (p.quests[0] == 1 && p.gold == 0) ) {
-				game.popup("You want a <font color='#4040FF'>Quest</font> ?", "Bring me something shiny and I'll will help you");
+				game.popup("You want a <font color='#4040FF'>Quest</font> ?", "Bring me something shiny and I'll will help you",true);
 				p.quests[0] = 1;
 				return;
 			}
@@ -38,13 +38,22 @@ class Hero extends Entity {
 				p.gold--;
 				p.quests[0] = 2;
 			}
-			game.popup("Thank you for your <font color='#4040FF'>gold coin</font> !", "You can now open doors with keys !");
+			game.popup("Thank you for your <font color='#4040FF'>gold coin</font> !", "You can now open doors with keys !",true);
 		case "59/31":
 			if( p.quests[1] == 0 ) {
 				p.quests[1] = 1;
 				Sounds.play("princess");
 				game.getChest(CPrincess, 0, 0);
 			}
+		case "53/47":
+			Sounds.play("npc");
+			game.popup("I love fishing", "What about you ?", true);
+		case "38/61":
+			Sounds.play("npc");
+			game.popup("Check our company website <font color='#4040FF'>ShiroGames.com</font>", "What ? In-game advertising ? No way !", true);
+		case "57/38":
+			Sounds.play("npc");
+			game.popup("If you talk to the princess, that will be game ending", "I am married as well, I know what I'm talking about !", true);
 		default:
 			trace("Unknown NPC @" + [n.x, n.y]);
 		}
@@ -179,7 +188,13 @@ class Hero extends Entity {
 				cleanPuzzle();
 				game.getChest(CPuzzle, 0, 0);
 			}
-			
+		case DungeonExit:
+			if( y > 24.9 ) {
+				teleport(59, 43);
+				game.initDungeon(false);
+				game.world.remove(59, 44);
+			} else
+				iy = 24;
 		default:
 			cleanPuzzle();
 			

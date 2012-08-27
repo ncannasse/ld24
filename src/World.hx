@@ -35,6 +35,7 @@ enum Block {
 	DungeonPuzzle;
 	MonsterGenerator;
 	FakeTree;
+	DungeonExit;
 	// extra
 	DarkDungeon;
 	Lock;
@@ -105,7 +106,7 @@ class World {
 		case Dark, Tree, Water, Bush, Rock, Cactus, Lock, Door, DarkDungeon, DungeonWall, DungeonStat: true;
 		case BridgeUD, BridgeLR, Dungeon, MonsterGenerator: false;
 		case Field, SavePoint, Sand, Free, DungeonSoil, FakeTree: false;
-		case SandBank, RiverBank, Detail, SandDetail, DungeonStairs, DungeonFakeWall, DungeonFakeDark, DungeonPuzzle : false;
+		case SandBank, RiverBank, Detail, SandDetail, DungeonStairs, DungeonFakeWall, DungeonFakeDark, DungeonPuzzle, DungeonExit: false;
 		}
 	}
 	
@@ -131,7 +132,7 @@ class World {
 			if( rec ) null else Water;
 		case Field, Sand, DungeonSoil:
 			b;
-		case DungeonWall,DungeonStat,DungeonStairs,DungeonFakeWall,DungeonPuzzle,MonsterGenerator:
+		case DungeonWall,DungeonStat,DungeonStairs,DungeonFakeWall,DungeonPuzzle,MonsterGenerator, DungeonExit:
 			DungeonSoil;
 		case Detail, RiverBank, SandBank, SandDetail:
 			null;
@@ -218,6 +219,8 @@ class World {
 				case Dark:
 					if( rnd.random(3) == 0 )
 						putBlock(x, y, Tree, rnd.random(5) - 2, rnd.random(2), 0, true);
+				case DungeonExit:
+					putBlock(x, y, DungeonStairs);
 				case BridgeLR, BridgeUD, SavePoint, Door, Dungeon, DungeonStat,DungeonStairs, DungeonWall, DungeonFakeWall,DungeonPuzzle,MonsterGenerator,FakeTree:
 					putBlock(x, y, b);
 				default:
@@ -321,6 +324,8 @@ class World {
 			return MonsterGenerator;
 		case 0x0F4D01:
 			return FakeTree;
+		case 0x9ABC9C:
+			return DungeonExit;
 		default:
 			if( col & 0xFFFF00 == 0xFFFF00 ) {
 				chests.push( { x:x, y:y, e : null, id : Type.createEnumIndex(Chests.ChestKind,col & 0xFF) } );

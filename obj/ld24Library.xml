@@ -6,8 +6,7 @@
   <frame>
     <library>
       <clip id="Sharepoint__" />
-      <font id="BmpFont" name="BmpFont" import="gfx\04B_03__.TTF" glyphs="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!,()-/" size="19492" modified="26/08/2012 07:41:16" />
-      <sound id="Music1" name="Music1" import="sfx\music1.mp3" size="500352" modified="26/08/2012 23:10:58" />
+      <font id="BmpFont" name="BmpFont" import="gfx\04B_03__.TTF" glyphs="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!,()-/'" size="19492" modified="26/08/2012 07:41:16" />
     </library>
   </frame>
 </movie>

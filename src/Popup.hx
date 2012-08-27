@@ -7,6 +7,7 @@ class Popup extends SPR {
 	public var startY : Float;
 	public var speed : Float;
 	public var wait : Float;
+	public var dialog : Bool;
 	
 	static var all = new Array<Popup>();
 	
@@ -38,8 +39,11 @@ class Popup extends SPR {
 		return true;
 	}
 	
-	public static function has() {
-		return all.length > 0;
+	public static function hasDialog() {
+		for( p in all )
+			if( p.dialog )
+				return true;
+		return false;
 	}
 	
 	public static function updateAll( dt ) {
