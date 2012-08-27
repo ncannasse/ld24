@@ -27,9 +27,12 @@ class Title {
 		root.scaleX = root.scaleY = 2;
 		game.root.addChild(root);
 		
-		root.addEventListener(flash.events.MouseEvent.CLICK, function(_) start());
-				
-		root.addEventListener(flash.events.MouseEvent.MOUSE_MOVE, function(_) {
+		var but = new SPR();
+		but.graphics.beginFill(0, 0);
+		but.graphics.drawRect(100, 100, 100, 80);
+		but.addEventListener(flash.events.MouseEvent.CLICK, function(_) start());
+		but.buttonMode = but.mouseEnabled = true;
+		but.addEventListener(flash.events.MouseEvent.MOUSE_MOVE, function(_) {
 			var k = root.mouseY < 140;
 			if( load == k && game.hasSave() ) {
 				Sounds.play("menu");
@@ -75,6 +78,8 @@ class Title {
 		cursor = new SPR();
 		cursor.addChild(new flash.display.Bitmap(Entity.sprites[Type.enumIndex(Entity.EKind.Cursor)][0]));
 		root.addChild(cursor);
+
+		root.addChild(but);
 		root.addEventListener(flash.events.Event.ENTER_FRAME, update);
 		Key.init();
 		update(null);
