@@ -56,7 +56,7 @@ class Hero extends Entity {
 			game.popup("If you talk to the princess, that will be game ending", "I am married as well, I know what I'm talking about !", true);
 		case "41/72":
 			Sounds.play("npc");
-			game.popup("If you can't find your way, try to push some rock to open the path", "Yes I know, this is quite a classic trick...", true);
+			game.popup("If you can't find your way, try to push some rock", "Yes I know, this is quite a classic trick...", true);
 		default:
 			trace("Unknown NPC @" + [n.x, n.y]);
 		}
