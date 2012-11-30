@@ -86,8 +86,11 @@ class Game implements haxe.Public {
 	}
 	
 	function init() {
-			
-		music = new flash.media.Sound(new flash.net.URLRequest("music1.mp3"));
+		
+		var purl = root.loaderInfo.url.split("/");
+		purl.pop();
+		var murl = purl.join("/") + "/music1.mp3";
+		music = new flash.media.Sound(new flash.net.URLRequest(murl));
 		
 		monsters = [];
 		entities = [];
