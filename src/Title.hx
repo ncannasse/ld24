@@ -115,6 +115,7 @@ class Title {
 		started = true;
 		if( !load )
 			Game.props = Game.DEF_PROPS;
+		root.stage.focus = root.stage;
 		root.removeEventListener(flash.events.Event.ENTER_FRAME,update);
 		root.remove();
 		game.init();
