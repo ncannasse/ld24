@@ -724,7 +724,7 @@ class Game implements haxe.Public {
 		inst = new Game(flash.Lib.current);
 		inst.root.addEventListener(flash.events.Event.ENTER_FRAME, function(_) inst.update());
 		var url = inst.root.loaderInfo.url;
-		if( StringTools.startsWith(url, "http://evoland.shirogame.com/") || StringTools.startsWith(url, "http://evoland.shiro.fr/") || StringTools.startsWith(url, "file://") ) {
+		if( StringTools.startsWith(url, "http://evoland.shirogames.com/") || StringTools.startsWith(url, "http://evoland.shiro.fr/") || StringTools.startsWith(url, "file://") ) {
 			Key.init();
 			var title = new Title(inst);
 		}
