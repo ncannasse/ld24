@@ -30,7 +30,7 @@ class Popup extends SPR {
 		virtualY -= dt * speed;
 		if( virtualY < targetY ) {
 			virtualY = targetY;
-			wait = speed * 10;
+			wait = speed * 30;
 			speed = -speed * 0.5;
 		}
 		y = Std.int(virtualY);
