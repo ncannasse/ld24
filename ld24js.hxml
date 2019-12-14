@@ -1,0 +1,6 @@
+-cp src
+-js evoland.js
+-lib heaps
+-lib stb_ogg_sound
+-main Game
+-dce full

@@ -1,0 +1,22 @@
+[
+	{
+	  "input": "04B_03__.TTF",
+	  "output": "font14.fnt",
+	  "mode": "raster",
+	  "options": ["allownonprint"],
+	  "charset": [
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!,()-/'."
+	  ],
+	  "fontSize": 14
+	},
+	{
+	  "input": "04B_03__.TTF",
+	  "output": "font20.fnt",
+	  "mode": "raster",
+	  "options": ["allownonprint"],
+	  "charset": [
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ?!,()-/'."
+	  ],
+	  "fontSize": 20
+	}
+]

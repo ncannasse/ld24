@@ -1,6 +1,5 @@
-using Common;
 
-class Popup extends SPR {
+class Popup extends h2d.Object {
 
 	public var virtualY : Float;
 	public var targetY : Float;
@@ -8,16 +7,16 @@ class Popup extends SPR {
 	public var speed : Float;
 	public var wait : Float;
 	public var dialog : Bool;
-	
+
 	static var all = new Array<Popup>();
-	
+
 	public function new() {
 		super();
 		speed = 4;
 		wait = 0;
 		all.push(this);
 	}
-	
+
 	function update(dt:Float) {
 		if( wait > 0 ) {
 			wait -= dt;
@@ -34,18 +33,18 @@ class Popup extends SPR {
 			speed = -speed * 0.5;
 		}
 		y = Std.int(virtualY);
-		if( virtualY > stage.stageHeight )
+		if( virtualY > getScene().height )
 			return false;
 		return true;
 	}
-	
+
 	public static function hasDialog() {
 		for( p in all )
 			if( p.dialog )
 				return true;
 		return false;
 	}
-	
+
 	public static function updateAll( dt ) {
 		for( p in all.copy() )
 			if( !p.update(dt) ) {

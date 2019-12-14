@@ -1,17 +1,16 @@
-using Common;
 
 class Hero extends Entity {
 
 	public var lock : Bool;
 	public var dirX : Int;
 	public var dirY : Int;
-	public var sword : { dx : Int, dy : Int, pos : Float, speed : Float, mc : SPR };
+	public var sword : { dx : Int, dy : Int, pos : Float, speed : Float, mc : h2d.Object };
 	public var moving : Bool;
 	public var push : Float;
 	public var hitRecover : Float;
-	var puzzle : Array<{x:Int,y:Int,s:SPR}>;
+	var puzzle : Array<{x:Int,y:Int,s:h2d.Object}>;
 	var sound : Bool;
-	
+
 	public function new(x,y) {
 		super(Hero, x, y);
 		dirY = 1;
@@ -53,15 +52,15 @@ class Hero extends Entity {
 			game.popup("Check our company website <font color='#4040FF'>ShiroGames.com</font>", "What ? In-game advertising ? No way !", true);
 		case "57/38":
 			Sounds.play("npc");
-			game.popup("If you talk to the princess, that will be game ending", "I am married as well, I know what I'm talking about !", true);
+			game.popup("If you talk to the princess, it will be game end", "I am married as well, I know what I'm talking about !", true);
 		case "41/72":
 			Sounds.play("npc");
-			game.popup("If you can't find your way, try to push some rock", "Yes I know, this is quite a classic trick...", true);
+			game.popup("Can't find your way? Try to push some rock", "Yes I know, this is quite a classic trick...", true);
 		default:
 			trace("Unknown NPC @" + [n.x, n.y]);
 		}
 	}
-	
+
 	function collide(x, y) {
 		if( !game.world.collide(x, y) )
 			return false;
@@ -79,20 +78,37 @@ class Hero extends Entity {
 				talk(n);
 		return true;
 	}
-	
-	public function move(dx, dy, dt:Float) {
-		dirX = dx;
-		dirY = dy;
-		
+
+	public function move(dx:Float, dy:Float, dt:Float) {
+		var angle = Math.atan2(dy,dx);
+
+		if( Math.abs(angle) < Math.PI/4 ) {
+			dirX = 1;
+			dirY = 0;
+		} else if( Math.abs(angle) > Math.PI*3/4 ) {
+			dirX = -1;
+			dirY = 0;
+		} else {
+			dirX = 0;
+			dirY = angle > 0 ? 1 : -1;
+		}
+		if( dx != 0 )
+			doMove(dx,0,dt);
+		if( dy != 0 )
+			doMove(0,dy,dt);
+	}
+
+	function doMove(dx:Float,dy:Float,dt:Float) {
+
 		if( Game.props.freeMove ) {
-			
+
 			var s = speed * dt;
-			
+
 			var px1 = Std.int((x * Const.SIZE + bounds.x) / Const.SIZE  + dx * s);
 			var px2 = Std.int((x * Const.SIZE + bounds.x + bounds.w - 1) / Const.SIZE  + dx * s);
 			var py1 = Std.int((y * Const.SIZE + bounds.y) / Const.SIZE  + dy * s);
 			var py2 = Std.int((y * Const.SIZE + bounds.y + bounds.h - 1) / Const.SIZE  + dy * s);
-			
+
 			if( collide(px1, py1) || collide(px2, py1) || collide(px1, py2) || collide(px2, py2) ) {
 				push += dt;
 				if( push > 25 ) {
@@ -106,10 +122,10 @@ class Hero extends Entity {
 				return;
 			}
 			push = 0;
-			
+
 			this.x += dx * s;
 			this.y += dy * s;
-			
+
 			var nx = Std.int(this.x + (bounds.x + bounds.w * 0.5) / Const.SIZE);
 			var ny = Std.int(this.y + (bounds.y + bounds.h * 0.5) / Const.SIZE);
 			if( nx != ix || ny != iy ) {
@@ -117,19 +133,19 @@ class Hero extends Entity {
 				iy = ny;
 				endMove();
 			}
-			
+
 			moving = true;
-				
+
 		} else {
-		
-			var x = ix + dx;
-			var y = iy + dy;
+
+			var x = ix + (dx == 0 ? 0 : dx > 0 ? 1 : -1);
+			var y = iy + (dy == 0 ? 0 : dy > 0 ? 1 : -1);
 			if( collide(x, y) )
 				return;
 			target = { x : x, y : y };
 		}
 	}
-	
+
 	override function update(dt) {
 		if( target == null && !moving )
 			frame = 0;
@@ -140,7 +156,7 @@ class Hero extends Entity {
 			}
 		} else
 			sound = false;
-		
+
 		if( dirY < 0 ) kind = HeroUp else kind = Hero;
 		super.update(dt);
 		if( hitRecover > 0 ) {
@@ -152,7 +168,7 @@ class Hero extends Entity {
 		if( sword != null )
 			updateSword(dt);
 	}
-	
+
 	function cleanPuzzle() {
 		if( puzzle != null ) {
 			for( p in puzzle )
@@ -160,7 +176,7 @@ class Hero extends Entity {
 			puzzle = null;
 		}
 	}
-	
+
 	override function endMove() {
 		switch( game.world.t[ix][iy] ) {
 		case SavePoint:
@@ -178,10 +194,10 @@ class Hero extends Entity {
 					puzzle = [];
 					break;
 				}
-				
-			var s = new SPR();
-			s.graphics.beginFill(0xFFFFFF, 0.5);
-			s.graphics.drawRect(0, 0, Const.SIZE, Const.SIZE);
+
+			var s = new h2d.Graphics();
+			s.beginFill(0xFFFFFF, 0.5);
+			s.drawRect(0, 0, Const.SIZE, Const.SIZE);
 			s.x = ix * Const.SIZE;
 			s.y = iy * Const.SIZE;
 			game.dm.add(s, Const.PLAN_BG);
@@ -200,12 +216,12 @@ class Hero extends Entity {
 				iy = 24;
 		default:
 			cleanPuzzle();
-			
+
 			if( ix == 26 && iy == 42 && Game.props.dungeon )
 				game.world.remove(26, 40);
 		}
 	}
-	
+
 	function updateSword(dt:Float) {
 		sword.pos += dt * sword.speed;
 		if( sword.pos >= 8 ) {
@@ -214,10 +230,10 @@ class Hero extends Entity {
 		}
 		sword.mc.x = mc.x + 8 + (sword.pos - 1) * sword.dx;
 		sword.mc.y = mc.y + 8 + (sword.pos - 1) * sword.dy + (sword.dx != 0 ? 2 : 0);
-		
+
 		var hitX = sword.mc.x + sword.dx * 10;
 		var hitY = sword.mc.y + sword.dy * 10;
-		
+
 		var hx = Std.int(hitX / Const.SIZE);
 		var hy = Std.int(hitY / Const.SIZE);
 		switch( game.world.t[hx][hy] ) {
@@ -225,7 +241,7 @@ class Hero extends Entity {
 			game.world.remove(hx, hy);
 		default:
 		}
-		
+
 		var props = Game.props;
 		for( m in game.monsters ) {
 			var dx = (m.x * Const.SIZE + 8) - hitX;
@@ -247,24 +263,24 @@ class Hero extends Entity {
 				break;
 			}
 		}
-		
+
 		if( sword.pos < 0 ) {
 			sword.mc.remove();
 			sword = null;
 		}
 	}
-	
+
 	public function attack() {
-		var smc = new SPR();
-		var bmp = new flash.display.Bitmap(Entity.sprites[Type.enumIndex(Entity.EKind.Sword)][0]);
+		var smc = new h2d.Object();
+		var bmp = new h2d.Bitmap(game.spriteFrames[Type.enumIndex(Entity.EKind.Sword)][0]);
 		bmp.x = -8;
 		bmp.y = -3;
 		smc.addChild(bmp);
-		smc.rotation = Math.atan2( -dirX, dirY) * 180 / Math.PI;
+		smc.rotation = Math.atan2( -dirX, dirY);
 		game.dm.add(smc, Const.PLAN_ENTITY + (dirY < 0 ? -1 : 0));
 		sword = { dx : dirX, dy : dirY, pos : 0., speed : 3., mc : smc };
 		updateSword(0);
 		Sounds.play("sword");
 	}
-	
+
 }

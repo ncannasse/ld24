@@ -31,7 +31,7 @@ enum ChestKind {
 }
 
 class Chests  {
-	
+
 	public static var t : Array<Dynamic> = [
 		{ name : "Left Key", sub : "Always going right is boring !" },
 		{ name : "2D Movement", sub : "Lucky ! You can't go anywhere else anyway" },
@@ -82,7 +82,7 @@ class Chests  {
 		{ name : "Puzzle Solved !", sub : "Real adventurers must be strong AND smart" },
 		{ name : "Level Up !", sub : "You have reached level " },
 		{ name : "Monster Farming !", sub : "What that ACTUALLY funny ?" },
-		{ name : "Princess", sub : "Time to make new adventurers, maybe ?" },
+		{ name : "Princess", sub : "Or is it a Prince, maybe ?" },
 	];
-	
+
 }

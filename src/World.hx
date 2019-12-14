@@ -1,13 +1,3 @@
-using Common;
-
-@:bitmap("world.png") class WorldPNG extends BMP {
-}
-
-@:bitmap("dungeon.png") class DungeonPNG extends BMP {
-}
-
-@:bitmap("tiles.png") class TilesPNG extends BMP {
-}
 
 enum Block {
 	Dark;
@@ -35,8 +25,9 @@ enum Block {
 	DungeonPuzzle;
 	MonsterGenerator;
 	FakeTree;
-	DungeonExit;
+	Shades;
 	// extra
+	DungeonExit;
 	DarkDungeon;
 	Lock;
 	Free;
@@ -44,27 +35,24 @@ enum Block {
 }
 
 class World {
-	
+
 	public static inline var SIZE = 98;
-	
+
 	public var t : Array<Array<Block>>;
 	public var monsters : Array<{ x : Int, y : Int, id : Entity.EKind }>;
 	public var chests : Array<{ id : Chests.ChestKind, x : Int, y : Int, e : Entity }>;
 	public var npcs : Array < { x:Int, y:Int, e:Entity }>;
-	
-	public var bmp : BMP;
-	public var tiles : Array<Array<BMP>>;
+
+	public var root : h2d.TileGroup;
 	public var removed : Array<Array<Bool>>;
-	var removedBitmaps : Array<Array<BMP>>;
-	
-	var rnd : Rand;
-	var shadeM : flash.geom.Matrix;
-	var shadeSPR : Array<SPR>;
-	var pt : flash.geom.Point;
-	var p0 : flash.geom.Point;
+	var removedBitmaps : Array<Array<h2d.Tile>>;
+	var tiles : Array<Array<h2d.Tile>>;
+	var shadeTile : Array<h2d.Tile>;
+
+	var rnd : hxd.Rand;
 	var details : Bool;
-	
-	public function new( bmp : BMP ) {
+
+	public function new( pix : hxd.Pixels ) {
 		t = [];
 		monsters = [];
 		chests = [];
@@ -76,27 +64,15 @@ class World {
 			removedBitmaps[x] = [];
 			removed[x] = [];
 			for( y in 0...SIZE )
-				t[x][y] = decodeColor(bmp, x, y);
+				t[x][y] = decodeColor(pix, x, y);
 		}
-		bmp.dispose();
-		initTiles();
-		pt = new flash.geom.Point();
-		p0 = new flash.geom.Point();
-		this.bmp = new BMP(SIZE * Const.SIZE, SIZE * Const.SIZE, true, 0);
-		shadeM = new flash.geom.Matrix();
-		var s0 = new SPR();
-		s0.graphics.beginFill(0xFF000000, 0.15);
-		s0.graphics.drawEllipse(1, 10, 14, 8);
-		var s1 = new SPR();
-		s1.graphics.beginFill(0xFF000000, 0.15);
-		s1.graphics.drawEllipse(2, 11, 6, 5);
-		shadeSPR = [s0, s1];
+		tiles = h2d.Tile.autoCut(hxd.Res.tiles.toBitmap(), Const.SIZE, Const.SIZE).tiles;
+		shadeTile = tiles[Type.enumIndex(Shades)-1];
+		root = new h2d.TileGroup(hxd.Res.tiles.toTile());
+		root.colorKey = 0xFFFF00FF;
 	}
-	
-	function initTiles() {
-		tiles = Tiles.initTiles(new TilesPNG(0, 0), Const.SIZE);
-	}
-	
+
+
 	public function collide(x, y) {
 		if( x < 0 || y < 0 || x >= SIZE || y >= SIZE )
 			return true;
@@ -106,10 +82,10 @@ class World {
 		case Dark, Tree, Water, Bush, Rock, Cactus, Lock, Door, DarkDungeon, DungeonWall, DungeonStat: true;
 		case BridgeUD, BridgeLR, Dungeon, MonsterGenerator: false;
 		case Field, SavePoint, Sand, Free, DungeonSoil, FakeTree: false;
-		case SandBank, RiverBank, Detail, SandDetail, DungeonStairs, DungeonFakeWall, DungeonFakeDark, DungeonPuzzle, DungeonExit: false;
+		case SandBank, RiverBank, Detail, SandDetail, DungeonStairs, DungeonFakeWall, DungeonFakeDark, DungeonPuzzle, DungeonExit, Shades: false;
 		}
 	}
-	
+
 	function getSoil(x, y, rec=false) : Block {
 		if( x < 0 || y < 0 || x >= SIZE || y >= SIZE )
 			return Field;
@@ -136,11 +112,11 @@ class World {
 			DungeonSoil;
 		case Detail, RiverBank, SandBank, SandDetail:
 			null;
-		case DarkDungeon, DungeonFakeDark:
+		case DarkDungeon, DungeonFakeDark, Shades:
 			null;
 		};
 	}
-	
+
 	public function remove(x, y) {
 		if( removed[x][y] )
 			return false;
@@ -153,7 +129,7 @@ class World {
 			Part.explode(b, x * Const.SIZE, y * Const.SIZE);
 		return true;
 	}
-	
+
 	public function getPos(b) {
 		var pos = [];
 		for( x in 0...SIZE )
@@ -162,11 +138,10 @@ class World {
 					pos.push( { x:x, y:y } );
 		return pos;
 	}
-	
+
 	public function draw() {
-		var t0 = flash.Lib.getTimer();
-		bmp.fillRect(bmp.rect, 0xFF000000);
-		rnd = new Rand(42);
+		root.clear();
+		rnd = new hxd.Rand(42);
 		details = false;
 		for( x in 0...SIZE )
 			for( y in 0...SIZE ) {
@@ -226,9 +201,8 @@ class World {
 				default:
 				}
 			}
-		//trace(flash.Lib.getTimer() - t0);
 	}
-	
+
 	function putSingle(x, y, b:Block, k : Int ) {
 		var tl = tiles[Type.enumIndex(b) - 1];
 		if( tl == null || tl.length == 0 ) throw "Not tile for " + b;
@@ -239,11 +213,8 @@ class World {
 		var tx = x * Const.SIZE + dx;
 		var ty = y * Const.SIZE + dy;
 		var rem = details && removed[x][y];
-		if( shade >= 0 && !rem ) {
-			shadeM.tx = tx;
-			shadeM.ty = ty;
-			bmp.draw(shadeSPR[shade], shadeM);
-		}
+		if( shade >= 0 && !rem )
+			put(tx,ty + 4,shadeTile[shade]);
 		var tl = tiles[Type.enumIndex(b) - 1];
 		var t = tl == null ? null : tl[min(rnd.random(tl.length), mrnd?rnd.random(tl.length):99)];
 		if( t == null || tl.length == 0 ) throw "Not tile for " + b;
@@ -252,19 +223,17 @@ class World {
 		else
 			put(tx, ty, t);
 	}
-	
+
 	inline function min(x:Int, y:Int) {
 		return x < y ? x : y;
 	}
-	
-	function put(x, y, b:BMP) {
-		pt.x = x;
-		pt.y = y;
-		bmp.copyPixels(b, b.rect, pt, b, p0, true);
+
+	function put(x, y, t:h2d.Tile) {
+		root.add(x,y,t);
 	}
-	
-	function decodeColor( bmp : BMP, x, y ) {
-		var col = bmp.getPixel(x, y);
+
+	function decodeColor( bmp : hxd.Pixels, x, y ) {
+		var col = bmp.getPixel(x, y) & 0xFFFFFF;
 		switch( col ) {
 		case 0, 0xDA02A7:
 			return Dark;
@@ -334,6 +303,6 @@ class World {
 			throw "Unknown color 0x" + StringTools.hex(col, 6)+" at ("+x+","+y+")";
 		}
 	}
-	
-	
+
+
 }

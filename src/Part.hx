@@ -1,8 +1,7 @@
-using Common;
 
 class Part {
 
-	var mc : flash.display.DisplayObject;
+	var mc : h2d.Object;
 	var x : Float;
 	var y : Float;
 	var z : Float;
@@ -11,7 +10,7 @@ class Part {
 	public var vz : Float;
 	public var time : Float;
 	public var speed : Float;
-	
+
 	public function new(x, y, z, mc) {
 		this.mc = mc;
 		this.x = x;
@@ -27,7 +26,7 @@ class Part {
 		time = 50.;
 		all.push(this);
 	}
-	
+
 	public function update(dt:Float) {
 		x += vx * speed;
 		y += vy * speed;
@@ -43,34 +42,25 @@ class Part {
 		mc.alpha = time / 30;
 		return time > 0;
 	}
-	
+
 	public function remove() {
 		mc.parent.removeChild(mc);
 	}
-	
-	public static function explode( bmp : flash.display.BitmapData, px : Int, py : Int, proba = 100 ) {
-		if( bmp == null )
+
+	public static function explode( t : h2d.Tile, px : Int, py : Int, proba = 100 ) {
+		if( t == null )
 			return;
-		for( x in 0...bmp.width )
-			for( y in 0...bmp.height ) {
-				var c = bmp.getPixel32(x, y);
-				if( c == 0 || Std.random(100) >= proba ) continue;
-				var b = new flash.display.Bitmap(Part.getColorPixel(c));
+		for( x in 0...t.iwidth )
+			for( y in 0...t.iheight ) {
+				if( Std.random(100) >= proba ) continue;
+				var c = t.sub(x,y,1,1);
+				var b = new h2d.Bitmap(c);
 				new Part(px + x, py + y, 0, b);
 			}
 	}
-	
+
 	static var all = new Array<Part>();
-	static var PIXELS = new IntHash();
-	public static function getColorPixel( c : Int ) {
-		var p = PIXELS.get(c);
-		if( p == null ) {
-			p = new flash.display.BitmapData(1, 1, false, c);
-			PIXELS.set(c, p);
-		}
-		return p;
-	}
-	
+
 	public static function updateAll( dt ) {
 		for( p in all.copy() )
 			if( !p.update(dt) ) {
@@ -78,5 +68,5 @@ class Part {
 				all.remove(p);
 			}
 	}
-	
+
 }

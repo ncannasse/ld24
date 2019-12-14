@@ -4,7 +4,7 @@ class Monster extends Entity {
 	var start : { x : Float, y : Float };
 	var attack : Bool;
 	public var generated : Bool;
-	
+
 	public function new(k, x,y) {
 		super(k, x, y);
 		wait = 10;
@@ -20,14 +20,14 @@ class Monster extends Entity {
 		}
 		start = { x : x, y : y };
 	}
-	
+
 	override function endMove() {
 		wait = (Math.random() + 0.2) * 10;
 	}
-	
+
 	function endWait() {
 	}
-	
+
 	public function deathHit() {
 		switch( kind ) {
 		case Knight:
@@ -35,9 +35,9 @@ class Monster extends Entity {
 		default:
 		}
 		return true;
-		
+
 	}
-	
+
 	public function canHit() {
 		switch( kind ) {
 		case Knight:
@@ -48,7 +48,7 @@ class Monster extends Entity {
 		}
 		return true;
 	}
-	
+
 	override function update(dt:Float) {
 		if( wait > 0 ) {
 			wait -= dt;
@@ -122,11 +122,11 @@ class Monster extends Entity {
 		}
 		super.update(dt);
 	}
-	
+
 	public function kill() {
 		explode(10);
 		remove();
 		game.monsters.remove(this);
 	}
-	
+
 }

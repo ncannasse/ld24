@@ -1,10 +1,6 @@
 -cp src
--cp gfx
--cp lib
--cp sfx
--swf ld24.swf
--swf-header 600:408:40:000000
--swf-lib obj\ld24Resources.swf
---flash-strict
--swf-version 10
+-hl evoland.hl
+-lib heaps
+-lib hlsdl
 -main Game
+-D windowSize=600x408

@@ -1,42 +1,62 @@
-using Common;
+import hxd.Key;
+import hxd.Key in K;
 
-class Game implements haxe.Public {
-	
-	var root : SPR;
-	var view : SPR;
-	var world : World;
-	var realWorld : World;
-	var worldBMP : flash.display.Bitmap;
-	var scroll : { x : Float, y : Float, mc : SPR, curZ : Float, tz : Float };
-	var hero : Hero;
-	var output : BMP;
-	var outputBMP : flash.display.Bitmap;
-	var pixelFilter : BMP;
-	var dm : DepthManager;
-	
-	var entities : Array<Entity>;
-	var barsDelta : Float;
-	var curColor : { mask : Float, delta : Float, alpha : Float, rgb : Float, k : Float };
+class BitmaskShader extends h3d.shader.ScreenShader {
+	static var SRC = {
+		@param var texture : Sampler2D;
+		@param var mask : Int;
+		@param var delta : Float;
+
+		function conv( v : Float ) : Float {
+			var k = int(min( v * 255 + delta, 255 ) ) & mask;
+			return float(k) / 320;
+		}
+
+		function fragment() {
+			var pixel = texture.get(calculatedUV);
+			pixelColor = pixel;
+			pixelColor.rgb = vec3(conv(pixel.r),conv(pixel.g),conv(pixel.b));
+			pixelColor.a = 1;
+			if( delta == 0x30 ) {
+				if( pixel.b > 0.5 )
+					pixelColor.b = pixel.b;
+				if( pixel.r > 0.5 && pixel.g > 0.5 )
+					pixelColor.rg = vec2(0.5,0.5);
+			}
+		}
+	}
+}
+
+class Game extends hxd.App {
+
+	public var entities : Array<Entity>;
+	public var monsters : Array<Monster>;
+	public var dm : h2d.Layers;
+	public var world : World;
+	public var hero : Hero;
+
+	public var spriteFrames : Array<Array<h2d.Tile>>;
+	var scroll : { x : Float, y : Float, mc : h2d.Object, curZ : Float, tz : Float };
 	var shake : { time : Float, power : Float };
-	var generators : Array<{ x : Int, y : Int, time : Float }>;
-	var monsters : Array<Monster>;
-	
-	var saveObj : flash.net.SharedObject;
-	var savedData : String;
-	
-	var uiBar : SPR;
-	
-	var music : flash.media.Sound;
-	
+
 	var circleSize : Float;
-	var mask : SPR;
-	
+	var mask : h2d.Graphics;
+	var realWorld : World;
+	var generators : Array<{ x : Int, y : Int, time : Float }>;
+	var curColor : { mask : Float, delta : Float, alpha : Float, rgb : Float, k : Float };
+	var outputFilters : Array<h2d.filter.Filter>;
+	var barsDelta : Float;
+	var bars : h2d.Graphics;
+	var deltaTest = 0;
+	var uiBar : h2d.Graphics;
+	var pixelFilter : h2d.Bitmap;
+
 	static var has = {
 		monsters : false,
 		npc : false,
 		savePoints : false,
 	};
-	
+
 	static var DEF_PROPS = {
 		zoom : 4,
 		bars : true,
@@ -66,57 +86,32 @@ class Game implements haxe.Public {
 		sounds : false,
 		music : false,
 	};
+
 	public static var props = DEF_PROPS;
-	
-	function new(root) {
-		this.root = root;
-		saveObj = flash.net.SharedObject.getLocal("ld24save");
-		try {
-			savedData = saveObj.data.save;
-			props = haxe.Unserializer.run(savedData);
-			if( props.quests == null ) props.quests = [];
-			if( props.rem == null ) props.rem = [];
-		} catch( e : Dynamic ) {
-			savedData = null;
-		}
-	}
-	
-	public function hasSave() {
-		return savedData != null;
-	}
-	
-	function init() {
-		
-		var purl = root.loaderInfo.url.split("/");
-		purl.pop();
-		var murl = purl.join("/") + "/music1.mp3";
-		music = new flash.media.Sound(new flash.net.URLRequest(murl));
-		
+
+	override function init() {
+
 		monsters = [];
 		entities = [];
-		view = new SPR();
 		barsDelta = 0.;
-		output = new BMP(root.stage.stageWidth, root.stage.stageHeight);
-		outputBMP = new flash.display.Bitmap(output);
-		root.addChild(outputBMP);
-		
-		initPixelFilter(props.zoom);
-		
-		world = new World(new World.WorldPNG(0, 0));
+
+		spriteFrames = h2d.Tile.autoCut(hxd.Res.sprites.toBitmap(),16,16).tiles;
+
+		world = new World(hxd.Res.world.getPixels());
 		realWorld = world;
-				
+
 		for( r in props.rem )
 			world.removed[r % World.SIZE][Std.int(r / World.SIZE)] = true;
-		
+
 		world.draw();
-		scroll = { x : (props.pos.x + 0.5) * Const.SIZE, y : (props.pos.y + 0.5) * Const.SIZE, mc : new SPR(), curZ : props.zoom, tz : 1. };
+		scroll = { x : (props.pos.x + 0.5) * Const.SIZE, y : (props.pos.y + 0.5) * Const.SIZE, mc : new h2d.Object(), curZ : props.zoom, tz : 1. };
 		scroll.mc.x = -1000;
-		worldBMP = new flash.display.Bitmap(world.bmp);
-		scroll.mc.addChild(worldBMP);
-		dm = new DepthManager(scroll.mc);
-		view.addChild(scroll.mc);
-		
-		var hchests = new IntHash();
+		scroll.mc.addChild(world.root);
+		dm = new h2d.Layers(scroll.mc);
+		s2d.addChild(scroll.mc);
+		initPixelFilter(props.zoom);
+
+		var hchests = new Map();
 		for( c in props.chests )
 			hchests.set(c, true);
 		for( c in world.chests )
@@ -129,30 +124,28 @@ class Game implements haxe.Public {
 
 		if( props.dungeon )
 			initDungeon(true);
-		
-		update();
-		
+
 		if( props.chests.length == 0 )
 			getChest(CRightCtrl, 0, 0);
-			
+
 		if( props.music )
-			music.play(2, 99999);
-			
+			hxd.Res.music.play(true).position = 2;
+
 		updateUI();
 		updateWeb();
 	}
-	
-	function updateUI() {
+
+	public function updateUI() {
 		if( uiBar == null ) {
-			uiBar = new SPR();
+			uiBar = new h2d.Graphics();
 			uiBar.x = 5;
 			uiBar.y = 5;
-			root.addChild(uiBar);
+			s2d.addChild(uiBar);
 			uiBar.scaleX = uiBar.scaleY = 2;
 		}
 		var border = 0xF0F0F0;
 		var bg = 0x606060;
-		var g = uiBar.graphics;
+		var g = uiBar;
 		g.clear();
 		if( props.life > 0 ) {
 			g.beginFill(border);
@@ -172,29 +165,31 @@ class Game implements haxe.Public {
 			g.drawRect(2, 14, props.xp, 4);
 		}
 	}
-	
-	function initDungeon(v) {
+
+	public function initDungeon(v) {
 		props.dungeon = v;
-		
-		
+
 		for( c in world.chests )
 			if( c.e != null ) {
 				c.e.remove();
 				c.e = null;
 			}
-		
+		scroll.mc.removeChild(world.root);
+
 		if( v ) {
-			world = new World(new World.DungeonPNG(0, 0));
+			world = new World(hxd.Res.dungeon.getPixels());
 			for( r in props.rem ) {
 				var y = Std.int(r / World.SIZE);
 				if( y >= World.SIZE )
 					world.removed[r % World.SIZE][y-World.SIZE] = true;
 			}
 		}
-		else
+		else {
 			world = realWorld;
-			
-		var hchests = new IntHash();
+		}
+		scroll.mc.addChildAt(world.root,0);
+
+		var hchests = new Map();
 		for( c in props.chests )
 			hchests.set(c, true);
 		for( c in world.chests )
@@ -202,109 +197,93 @@ class Game implements haxe.Public {
 				c.e = new Entity(Chest,c.x,c.y);
 				c.e.update(0);
 			}
-		
+
 		for( e in entities )
 			e.remove();
-		
+
 		for( m in monsters )
 			m.remove();
-		
+
 		entities = [];
 		monsters = [];
-		
+
 		has.monsters = false;
 		has.npc = false;
 		has.savePoints = false;
-		
+
 		world.draw();
-		worldBMP.bitmapData = world.bmp;
 		scroll.x = hero.ix;
 		scroll.y = hero.iy;
 	}
-	
-	function save() {
+
+	public function save() {
 		props.pos.x = hero.ix;
 		props.pos.y = hero.iy;
-		var d = haxe.Serializer.run(props);
-		if( savedData == d )
+		if( !hxd.Save.save(props,"evo2") )
 			return;
 		Sounds.play("save");
-		savedData = d;
-		saveObj.setProperty("save",savedData);
-		saveObj.flush();
 		popup("Game <font color='#00ff00'>Saved</font>", "You are safe !");
 	}
-	
+
 	function js( s : String ) {
-		if( !flash.external.ExternalInterface.available )
-			return;
-		flash.external.ExternalInterface.call("eval", s);
+		#if js
+		trace(s);
+		std.js.Syntax.code("eval({0})",s);
+		#end
 	}
-	
-	function popup( text : String, subText : String = "", dialog = false ) {
+
+	public function popup( text : String, subText : String = "", dialog = false ) {
 		var mc = new Popup();
 		mc.dialog = dialog;
 		mc.addChild(makePanel(text, subText));
-		mc.y = output.height;
-		mc.targetY = output.height - mc.height;
-		root.addChild(mc);
+		mc.y = s2d.height;
+		mc.targetY = s2d.height - Std.int(mc.getBounds().height) + 2;
+		s2d.addChild(mc);
 	}
-	
+
 	function makePanel( text : String, subText : String ) {
-		var mc = new SPR();
-		mc.graphics.beginFill(0);
-		mc.graphics.drawRect(0, 0, output.width, 40);
-		var tf = makeField(text);
-		tf.x = tf.y = 3;
+		var mc = new h2d.Graphics();
+		mc.beginFill(0);
+		mc.drawRect(0, 0, s2d.width, 40);
+		var tf = makeField(text,18);
+		tf.x = 4;
+		tf.y = 1;
 		mc.addChild(tf);
-		var tf = makeField(subText, 14);
-		tf.x = 3;
-		tf.y = 22;
+		var tf = makeField(subText, 12);
+		tf.x = 6;
+		tf.y = 23;
 		mc.addChild(tf);
 		return mc;
 	}
-	
-	function makeField(text,size=20) {
-		var tf = new TF();
-		var fmt = tf.defaultTextFormat;
-		fmt.font = "BmpFont";
-		fmt.size = size;
-		fmt.color = 0xFFFFFF;
-		tf.defaultTextFormat = fmt;
-		tf.embedFonts = true;
-		tf.sharpness = 400;
-		tf.gridFitType = flash.text.GridFitType.PIXEL;
-		tf.antiAliasType = flash.text.AntiAliasType.ADVANCED;
-		tf.selectable = tf.mouseEnabled = false;
-		tf.autoSize = flash.text.TextFieldAutoSize.LEFT;
-		tf.width = 0;
-		tf.height = 20;
-		tf.htmlText = text;
+
+	public static function makeField(text,size:Int) {
+		var tf = new h2d.HtmlText(hxd.Res.load("fonts/font"+size+".fnt").to(hxd.res.BitmapFont).toFont());
+		if( size == 18 ) tf.letterSpacing--;
+		tf.text = text;
 		return tf;
 	}
-	
-	
+
 	function initPixelFilter( k : Int ) {
-		if( pixelFilter != null )
-			pixelFilter.fillRect(pixelFilter.rect, 0);
-		else
-			pixelFilter = new BMP(output.width, output.height, true, 0);
-		for( x in 0...Std.int(output.width / k) )
-			for( y in 0...Std.int(output.height / k) ) {
+		if( pixelFilter == null )
+			pixelFilter = new h2d.Bitmap(h2d.Tile.fromTexture(new h3d.mat.Texture(s2d.width,s2d.height)),s2d);
+		var p = hxd.Pixels.alloc(s2d.width,s2d.height,RGBA);
+		for( x in 0...Std.int(s2d.width / k) )
+			for( y in 0...Std.int(s2d.height / k) ) {
 				var x = x * k, y = y * k;
-				pixelFilter.setPixel32(x, y, 0x40000000);
+				p.setPixel(x, y, 0x40000000);
 				for( i in 1...k ) {
-					pixelFilter.setPixel32(x + i, y, 0x20000000);
-					pixelFilter.setPixel32(x, y + i, 0x20000000);
+					p.setPixel(x + i, y, 0x20000000);
+					p.setPixel(x, y + i, 0x20000000);
 				}
 			}
+		pixelFilter.tile.getTexture().uploadPixels(p);
 	}
-	
+
 	function doShake() {
 		shake = { time : 10, power : 3 };
 	}
-	
-	function getChest( k : Chests.ChestKind, x : Int, y : Int ) {
+
+	public function getChest( k : Chests.ChestKind, x : Int, y : Int ) {
 		doShake();
 		var sound = "chest";
 		props.chests.push((y + (props.dungeon ? World.SIZE : 0)) * World.SIZE + x);
@@ -389,7 +368,7 @@ class Game implements haxe.Public {
 			props.sounds = true;
 		case CMusic:
 			props.music = true;
-			music.play(0, 99999);
+			hxd.Res.music.play(true);
 		}
 		Sounds.play(sound);
 		var t : Dynamic = Chests.t[Type.enumIndex(k)];
@@ -401,18 +380,17 @@ class Game implements haxe.Public {
 			t = { name : "???", sub : "" };
 		popup("You got <font color='#ff0000'>"+t.name+"</font>", t.sub+extra);
 	}
-	
+
 	function win() {
 		hero.lock = true;
 		circleSize = 300.;
-		mask = new SPR();
-		mask.x = output.width / 2;
-		mask.y = output.height / 2;
-		root.addChild(mask);
-		outputBMP.mask = mask;
-		update();
+		mask = new h2d.Graphics(s2d);
+		mask.x = s2d.width * 0.5;
+		mask.y = s2d.height * 0.5;
+		s2d.under(mask);
+		update(0);
 	}
-	
+
 	function gameOver() {
 		if( hero.lock )
 			return;
@@ -423,10 +401,10 @@ class Game implements haxe.Public {
 		hero.remove();
 		Sounds.play("gameOver");
 		var mc = makePanel("Game <font color='#ff0000'>Over</font> !", "Press Esc to return to title screen");
-		mc.y = Std.int((output.height - mc.height) * 0.5);
-		root.addChild(mc);
+		mc.y = Std.int((s2d.height - mc.getBounds().height) * 0.5);
+		s2d.addChild(mc);
 	}
-	
+
 	function updateWeb() {
 		var parts = ["banner", "author", "social"];
 		for( i in 0...parts.length )
@@ -434,14 +412,13 @@ class Game implements haxe.Public {
 		if( props.porn )
 			js("show('p0banner',true)");
 	}
-	
-	function update() {
-		Timer.update();
-		
+
+	override function update( _ ) {
+
 		if( hero == null )
 			return;
-		
-			
+
+
 		switch( props.scroll ) {
 		case 0:
 			// no
@@ -453,14 +430,14 @@ class Game implements haxe.Public {
 			scroll.y = Std.int(hero.y * Const.SIZE);
 		default:
 		}
-		
-		var dt = Timer.tmod;
-				
+
+		var dt = hxd.Timer.tmod;
+
 		if( circleSize > 200 ) {
 			circleSize -= dt;
-			mask.graphics.clear();
-			mask.graphics.beginFill(0, 0.5);
-			mask.graphics.drawCircle(0, 0, circleSize);
+			mask.clear();
+			mask.beginFill(0, 0.5);
+			mask.drawCircle(0, 0, circleSize);
 			if( circleSize <= 200 ) {
 				var letters = "Congratulations !".split("");
 				var colors = ["FF0000", "00FF00", "FFFFFF", "FFFF00", "FF00FF", "00FFFF"];
@@ -475,9 +452,9 @@ class Game implements haxe.Public {
 				}
 				var p = makePanel(letters.join(""), "You completed the game !");
 				p.y = 0;
-				root.addChild(p);
-				
-				var dun = new World(new World.DungeonPNG(0, 0));
+				s2d.addChild(p);
+
+				var dun = new World(hxd.Res.dungeon.getPixels());
 				var gold = 0, total = 0;
 				for( c in world.chests.concat(dun.chests) ) {
 					switch( c.id ) {
@@ -486,13 +463,13 @@ class Game implements haxe.Public {
 					}
 					total++;
 				}
-				
+
 				var p = makePanel("You found " + (props.gold + 1) + "/"+gold+" Gold Coins", "And opened "+(props.nchests+"/"+total)+" chests");
 				p.y = 370;
-				root.addChild(p);
+				s2d.addChild(p);
 			}
 		}
-		
+
 		var tz = scroll.tz * props.zoom;
 		var zooming = true;
 		scroll.curZ = scroll.curZ * 0.8 + tz * 0.2;
@@ -500,10 +477,10 @@ class Game implements haxe.Public {
 			zooming = false;
 			scroll.curZ = tz;
 		}
-		
+
 		var z = scroll.curZ;
-		var tx = scroll.x - (root.stage.stageWidth / z) * 0.5;
-		var ty = scroll.y - (root.stage.stageHeight / z) * 0.5;
+		var tx = scroll.x - (s2d.width / z) * 0.5;
+		var ty = scroll.y - (s2d.height / z) * 0.5;
 		var sx = Std.int(tx * z);
 		var sy = Std.int(ty * z);
 		if( !zooming ) {
@@ -513,14 +490,14 @@ class Game implements haxe.Public {
 		scroll.mc.x = -sx;
 		scroll.mc.y = -sy;
 		scroll.mc.scaleX = scroll.mc.scaleY = z;
-		
+
 		hero.update(dt);
-		
+
 		Popup.updateAll(dt);
 		Part.updateAll(dt);
-		
+
 		if( hero.target == null && !hero.lock ) {
-			
+
 			for( c in world.chests )
 				if( c.e != null && c.x == hero.ix && c.y == hero.iy ) {
 					c.e.remove();
@@ -529,33 +506,50 @@ class Game implements haxe.Public {
 					getChest(c.id,c.x,c.y);
 				}
 			hero.moving = false;
+			pad.axisDeadZone = 0.5;
+			var mx = pad.xAxis, my = pad.yAxis;
+			if( mx < 0 && !props.left )
+				mx = 0;
+			if( my != 0 && props.bars )
+				my = 0;
 			if( (Key.isDown(K.UP) || Key.isDown("Z".code) || Key.isDown("W".code)) && !props.bars )
-				hero.move(0, -1, dt);
+				my = -1;
 			if( hero.target == null && (Key.isDown(K.DOWN) || Key.isDown("S".code)) && !props.bars )
-				hero.move(0, 1, dt);
+				my = 1;
 			if( hero.target == null && (Key.isDown(K.LEFT) || Key.isDown("Q".code) || Key.isDown("A".code)) && props.left )
-				hero.move( -1, 0, dt);
+				mx = -1;
 			if( hero.target == null && Key.isDown(K.RIGHT) || Key.isDown("D".code) )
-				hero.move(1, 0, dt);
+				mx = 1;
+			if( mx != 0 || my != 0 ) {
+				var m = Math.sqrt(mx*mx+my*my);
+				if( m > 1 ) {
+					mx /= m;
+					my /= m;
+				}
+				hero.move(mx,my,dt);
+			}
 		}
-		
+
+		var cfg = hxd.Pad.DEFAULT_CONFIG;
 		if( hero.sword == null && !hero.lock ) {
-			if( (Key.isDown(K.SPACE) || Key.isDown(K.ENTER) || Key.isDown("E".code)) && props.weapons > 0 )
+			if( (Key.isDown(K.SPACE) || Key.isDown(K.ENTER) || Key.isDown("E".code) || pad.isPressed(cfg.X) || pad.isPressed(cfg.A)) && props.weapons > 0 )
 				hero.attack();
 		}
-		
-		if( Key.isToggled(27) ) {
+
+		if( Key.isPressed(27) || (pad.isPressed(cfg.start) && hero.lock) ) {
 			if( !hero.lock )
 				gameOver();
 			else {
-				js("document.location.reload()");
+				dispose();
+				new Title();
+				return;
 			}
 		}
 
 		// cheat code
-		if( Key.isToggled("S".code) && Key.isDown(K.CONTROL) )
+		if( Key.isPressed("S".code) && Key.isDown(K.CTRL) )
 			save();
-		
+
 		if( props.monsters > 0 ) {
 			if( !has.monsters ) {
 				has.monsters = true;
@@ -569,7 +563,7 @@ class Game implements haxe.Public {
 				m.update(dt);
 				var dx = m.x - hero.x;
 				var dy = m.y - hero.y;
-				var d = dx * dx + dy * dy;
+				var d = Math.sqrt(dx * dx + dy * dy);
 				if( d < 0.64 && m.deathHit() && hero.hitRecover <= 0 ) {
 					props.life--;
 					updateUI();
@@ -582,7 +576,7 @@ class Game implements haxe.Public {
 				}
 			}
 		}
-		
+
 		if( props.canSave && !has.savePoints ) {
 			has.savePoints = true;
 			for( p in world.getPos(SavePoint) ) {
@@ -592,7 +586,7 @@ class Game implements haxe.Public {
 				entities.push(e);
 			}
 		}
-		
+
 		if( props.npc > 0 && !has.npc ) {
 			has.npc = true;
 			for( n in world.npcs ) {
@@ -602,7 +596,7 @@ class Game implements haxe.Public {
 				world.t[n.x][n.y] = Lock;
 			}
 		}
-		
+
 		for( e in entities )
 			e.update(dt);
 
@@ -616,10 +610,11 @@ class Game implements haxe.Public {
 		case 2:
 			curColor = { delta : 0x10, mask : 0xC0, alpha : .5, rgb : 0., k : props.color };
 		case 3:
-			curColor = { delta : 0x28, mask : 0xE0, alpha : .5, rgb : 0., k : props.color };
+			curColor = { delta : 0x28, mask : 0xE0, alpha : .25, rgb : 0., k : props.color };
 		default:
 			curColor = { delta : 0, mask : 0xFF, alpha : 0., rgb : 0., k : props.color };
 		}
+
 		curColor = if( old == null ) curColor else {
 			delta : old.delta * 0.8 + curColor.delta * 0.2,
 			mask : old.mask * 0.8 + curColor.mask * 0.2,
@@ -629,17 +624,20 @@ class Game implements haxe.Public {
 		};
 
 		if( shake != null ) {
-			var m = new flash.geom.Matrix();
 			var a = shake.time < 10 ? shake.time / 10 : 1;
-			m.tx = (Math.random() * 2 - 1) * shake.power * a;
-			m.ty = (Math.random() * 2 - 1) * shake.power * a;
-			output.draw(view, m);
+			var tx = (Math.random() * 2 - 1) * shake.power * a;
+			var ty = (Math.random() * 2 - 1) * shake.power * a;
+			s2d.x = tx;
+			s2d.y = ty;
 			shake.time -= dt;
-			if( shake.time < 0 )
+			if( shake.time < 0 ) {
 				shake = null;
-		} else
-			output.draw(view);
-		
+				s2d.x = s2d.y = 0;
+			}
+		}
+
+		outputFilters = [];
+
 		var delta = Std.int(curColor.delta);
 		var mask = Math.ceil(curColor.mask);
 		if( delta != 0 || mask != 0xFF )
@@ -651,18 +649,24 @@ class Game implements haxe.Public {
 			var b = 15;
 			var f = (0.25 / g) * curColor.rgb;
 			var k = 1 - curColor.rgb;
-			var curFilter = new flash.filters.ColorMatrixFilter([
-				k + r*f, r*f, r*f, 0, 20 * curColor.rgb,
-				g*f, k + g*f, g*f, 0, 50 * curColor.rgb,
-				b*f, b*f, k + b*f, 0, 20 * curColor.rgb,
-				0,0,0,1,0,
+			var m1 = h3d.Matrix.L([
+				k + r*f, r*f, r*f, 0,
+				g*f, k + g*f, g*f, 0,
+				b*f, b*f, k + b*f, 0,
+				0, 0, 0, 1
 			]);
-			output.applyFilter(output, output.rect, new flash.geom.Point(0, 0), curFilter);
+			m1.tx = 0/255 * curColor.rgb;
+			m1.ty = 40/255 * curColor.rgb;
+			m1.tz = -40/255 * curColor.rgb;
+			m1.colorContrast(curColor.rgb*0.15);
+			m1.colorSaturate(-curColor.rgb*0.2);
+			var curFilter = new h2d.filter.ColorMatrix(m1);
+			outputFilters.push(curFilter);
 		}
-		
-		if( curColor.alpha > 0.01 )
-			output.draw(pixelFilter, null, new flash.geom.ColorTransform(1, 1, 1, curColor.alpha));
-			
+
+		pixelFilter.alpha = curColor.alpha;
+		pixelFilter.visible = curColor.alpha > 0.01;
+
 		if( generators != null )
 		for( g in generators ) {
 			var dx = hero.x - g.x;
@@ -686,48 +690,73 @@ class Game implements haxe.Public {
 				}
 			}
 		}
-		
+
 		var size = (Math.ceil(Const.SIZE * scroll.curZ) >> 1) + barsDelta;
-		if( props.bars || size < output.height * 0.5  ) {
+		if( props.bars || size < s2d.height * 0.5  ) {
 			var color = curColor.rgb == 0 ? 0xFF000000 : 0xFF143214;
-			output.fillRect(new flash.geom.Rectangle(0, 0, output.width, (output.height >> 1) - size), color);
-			output.fillRect(new flash.geom.Rectangle(0, (output.height >> 1) + size, output.width, output.height - (output.height >> 1) + size ), color);
+			if( bars == null )
+				bars = new h2d.Graphics(s2d);
+			bars.clear();
+			bars.beginFill(color);
+			bars.drawRect(0, 0, s2d.width, (s2d.height >> 1) - size - 5);
+			bars.drawRect(0, (s2d.height >> 1) + size - 5, s2d.width, s2d.height - (s2d.height >> 1) + size);
 			if( !props.bars )
 				barsDelta += 5 * dt;
+		} else {
+			if( bars != null ) {
+				bars.remove();
+				bars = null;
+			}
 		}
-		
+
+		if( this.mask != null )
+			outputFilters.push(new h2d.filter.Mask(this.mask));
+
 		dm.ysort(Const.PLAN_ENTITY);
+		scroll.mc.filter = outputFilters.length == 0 ? null : outputFilters.length == 1 ? outputFilters[0] : new h2d.filter.Group(outputFilters);
 	}
-	
+
+	var bitmaskFilter : h2d.filter.Shader<BitmaskShader>;
 	function applyMask(delta, mask) {
-		var bytes = output.getPixels(output.rect);
-		flash.Memory.select(bytes);
-		var p = 0;
-		for( i in 0...output.width * output.height ) {
-			var c = flash.Memory.getByte(p) + delta;
-			if( c > 0xFF ) c = 0xFF;
-			flash.Memory.setByte(p++, c & mask);
-			var c = flash.Memory.getByte(p) + delta;
-			if( c > 0xFF ) c = 0xFF;
-			flash.Memory.setByte(p++, c & mask);
-			var c = flash.Memory.getByte(p) + delta;
-			if( c > 0xFF ) c = 0xFF;
-			flash.Memory.setByte(p++, c & mask);
-			p++;
-		}
-		bytes.position = 0;
-		output.setPixels(output.rect,bytes);
+		if( bitmaskFilter == null )
+			bitmaskFilter = new h2d.filter.Shader(new BitmaskShader());
+		outputFilters.push(bitmaskFilter);
+		bitmaskFilter.shader.delta = delta;
+		bitmaskFilter.shader.mask = mask;
 	}
-	
+
+	override function dispose() {
+		super.dispose();
+		hxd.Res.music.stop();
+	}
+
 	public static var inst : Game;
-	static function main() {
-		inst = new Game(flash.Lib.current);
-		inst.root.addEventListener(flash.events.Event.ENTER_FRAME, function(_) inst.update());
-		var url = inst.root.loaderInfo.url;
-		if( StringTools.startsWith(url, "http://evoland.shirogames.com/") || StringTools.startsWith(url, "http://evoland.shiro.fr/") || StringTools.startsWith(url, "file://") ) {
-			Key.init();
-			var title = new Title(inst);
-		}
+	public static var pad : hxd.Pad = hxd.Pad.createDummy();
+
+	static function copy<T>(v:T):T {
+		return haxe.Unserializer.run(haxe.Serializer.run(v));
 	}
-	
+
+	public static function startGame( load ) {
+		props = copy(DEF_PROPS);
+		if( load ) {
+			props = hxd.Save.load(props,"evo2");
+		}
+		has.monsters = false;
+		has.npc = false;
+		has.savePoints = false;
+		inst = new Game();
+	}
+
+	static function main() {
+		#if hl
+		hxd.Res.initLocal();
+		#else
+		hxd.Res.initEmbed();
+		#end
+		hxd.Pad.wait(function(p) pad = p);
+		hxd.Timer.wantedFPS = 40;
+		new Title();
+	}
+
 }
